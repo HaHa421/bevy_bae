@@ -4,6 +4,8 @@
 name = "bevy_bae"
 version = "0.0.1"
 edition = "2024"
+license = "MIT OR Apache-2.0 "
+description = "Behavior as entities!"
 
 [dependencies]
 bevy_ecs = { version = "0.17", default-features = false }

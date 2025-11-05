@@ -51,6 +51,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "bevy_bae"
+version = "0.0.1"
+dependencies = [
+ "bevy_app",
+ "bevy_ecs",
+]
+
+[[package]]
 name = "bevy_derive"
 version = "0.17.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -96,14 +104,6 @@ dependencies = [
  "proc-macro2",
  "quote",
  "syn",
-]
-
-[[package]]
-name = "bevy_fluid_htn"
-version = "0.1.0"
-dependencies = [
- "bevy_app",
- "bevy_ecs",
 ]
 
 [[package]]
