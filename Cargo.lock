@@ -516,6 +516,8 @@ dependencies = [
  "bevy_mod_props",
  "bevy_ptr",
  "bevy_reflect",
+ "disqualified",
+ "log",
  "ustr",
  "variadics_please",
 ]

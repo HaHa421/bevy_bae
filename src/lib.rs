@@ -13,6 +13,7 @@ pub mod prelude {
                 EffectOf, EffectSpawner, EffectSpawnerCommands, Effects, IntoEffectBundle, effects,
             },
         },
+        plan::Planner,
         task::{
             TaskStatus,
             compound::{
@@ -21,13 +22,13 @@ pub mod prelude {
                 select::Select,
                 sequence::Sequence,
             },
-            primitive::TaskSystem,
+            primitive::Operator,
         },
     };
     pub use bevy_mod_props::{self, Props, Value};
     pub(crate) use {
         crate::value_ext::ValueExt as _, bevy_app::prelude::*, bevy_derive::Deref,
-        bevy_ecs::prelude::*, bevy_reflect::prelude::*,
+        bevy_ecs::prelude::*, bevy_reflect::prelude::*, log::warn,
     };
 }
 extern crate alloc;
@@ -38,6 +39,7 @@ use crate::prelude::*;
 
 pub mod condition;
 pub mod effect;
+pub mod plan;
 pub mod task;
 mod value_ext;
 

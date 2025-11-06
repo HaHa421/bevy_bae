@@ -5,18 +5,19 @@ use bevy_ecs::{lifecycle::HookContext, world::DeferredWorld};
 
 use crate::prelude::*;
 
+pub type OperatorId = SystemId<In<Entity>, TaskStatus>;
+
 #[derive(Component, Reflect)]
 #[reflect(Component)]
 #[component(on_insert = Self::on_insert_hook, on_replace = Self::on_replace_hook)]
-pub struct TaskSystem {
+pub struct Operator {
     #[reflect(ignore)]
-    register_system:
-        Option<Box<dyn FnOnce(&mut Commands) -> SystemId<In<Entity>, TaskStatus> + Send + Sync>>,
+    register_system: Option<Box<dyn FnOnce(&mut Commands) -> OperatorId + Send + Sync>>,
     #[reflect(ignore)]
-    system_id: Option<SystemId<In<Entity>, TaskStatus>>,
+    system_id: Option<OperatorId>,
 }
 
-impl TaskSystem {
+impl Operator {
     pub fn new<S, M>(system: S) -> Self
     where
         S: IntoSystem<In<Entity>, TaskStatus, M>,
@@ -29,7 +30,7 @@ impl TaskSystem {
         }
     }
 
-    pub(crate) fn system_id(&self) -> SystemId<In<Entity>, TaskStatus> {
+    pub(crate) fn system_id(&self) -> OperatorId {
         self.system_id.unwrap()
     }
 
@@ -55,9 +56,9 @@ impl TaskSystem {
     }
 }
 
-impl Debug for TaskSystem {
+impl Debug for Operator {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.debug_struct("TaskSystem")
+        f.debug_struct("Operator")
             .field("register_system", &"<callback>")
             .field("system_id", &self.system_id)
             .finish()

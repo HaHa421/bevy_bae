@@ -15,38 +15,36 @@ fn trunk_thumper_domain() -> impl Bundle {
                     conditions![
                         (Condition::eq("can_see_enemy", true), Name::new("Can see enemy"))
                     ],
-                    Sequence,
                     tasks!(Sequence[
                         (
                             Name::new("Navigate to enemy"),
-                            TaskSystem::new(navigate_to_enemy),
+                            Operator::new(navigate_to_enemy),
                             effects![
                                (Effect::set("location", "enemy"), Name::new("Set location to enemy position"))
                             ],
                         ),
                         (
                             Name::new("Do trunk slam"),
-                            TaskSystem::new(do_trunk_slam),
+                            Operator::new(do_trunk_slam),
                         ),
                     ]),
                 ),
                 (
                     Name::new("Patrol bridges"),
                     conditions![(Condition::always_true(), Name::new("Always true"))],
-                    Sequence,
                     tasks!(Sequence[
                         (
                             Name::new("Choose best bridge to check for enemies"),
-                            TaskSystem::new(choose_bridge_to_check),
+                            Operator::new(choose_bridge_to_check),
                         ),
                         (
                             Name::new("Go to bridge"),
-                            TaskSystem::new(navigate_to_bridge),
+                            Operator::new(navigate_to_bridge),
                             effects![(Effect::set("location", "bridge"), Name::new("Set location to bridge"))],
                         ),
                         (
                             Name::new("Check if anything is out of the ordinary"),
-                            TaskSystem::new(check_bridge),
+                            Operator::new(check_bridge),
                         ),
                     ]),
                 )
