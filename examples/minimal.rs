@@ -17,14 +17,14 @@ fn trunk_thumper_domain() -> impl Bundle {
                     tasks!(Sequence[
                         (
                             Name::new("Navigate to enemy"),
-                            Step::new(navigate_to_enemy),
+                            TaskSystem::new(navigate_to_enemy),
                             effects![
                                 Effect::set("location", "enemy"),
                             ],
                         ),
                         (
                             Name::new("Do trunk slam"),
-                            Step::new(do_trunk_slam),
+                            TaskSystem::new(do_trunk_slam),
                         ),
                     ]),
                 ),
@@ -35,16 +35,16 @@ fn trunk_thumper_domain() -> impl Bundle {
                     tasks!(Sequence[
                         (
                             Name::new("Choose best bridge to check for enemies"),
-                            Step::new(choose_bridge_to_check),
+                            TaskSystem::new(choose_bridge_to_check),
                         ),
                         (
                             Name::new("Go to bridge"),
-                            Step::new(navigate_to_bridge),
+                            TaskSystem::new(navigate_to_bridge),
                             effects![Effect::set("location", "bridge")],
                         ),
                         (
                             Name::new("Check if anything is out of the ordinary"),
-                            Step::new(check_bridge),
+                            TaskSystem::new(check_bridge),
                         ),
                     ]),
                 )

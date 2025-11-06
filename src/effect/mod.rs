@@ -4,8 +4,10 @@ use crate::prelude::*;
 
 pub mod relationship;
 
-#[derive(Component)]
+#[derive(Component, Reflect)]
+#[reflect(Component)]
 pub struct Effect {
+    #[reflect(ignore, default = "Effect::noop")]
     effect: Box<dyn FnMut(&mut Props) + Send + Sync + 'static>,
 }
 
@@ -57,5 +59,9 @@ impl Effect {
         let name = name.into();
         let value = value.into();
         Self::new(move |props| mutate(props.entry(name).or_insert(Default::default), value))
+    }
+
+    fn noop() -> Box<dyn FnMut(&mut Props) + Send + Sync + 'static> {
+        Box::new(|_| {})
     }
 }

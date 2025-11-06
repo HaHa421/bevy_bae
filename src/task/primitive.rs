@@ -5,18 +5,18 @@ use core::marker::PhantomData;
 use crate::prelude::*;
 
 #[derive(Component)]
-pub struct RegisteredStep {
+pub struct RegisteredTaskSystem {
     pub system_id: SystemId<In<Entity>, TaskStatus>,
 }
 
 #[derive(Component)]
-#[component(on_add = Step::<S, M>::queue_into_step)]
-pub struct Step<S: System<In = In<Entity>, Out = TaskStatus>, M: Send + Sync + 'static> {
+#[component(on_add = TaskSystem::<S, M>::queue_into_step)]
+pub struct TaskSystem<S: System<In = In<Entity>, Out = TaskStatus>, M: Send + Sync + 'static> {
     system: Option<S>,
     marker: PhantomData<M>,
 }
 
-impl<S: System<In = In<Entity>, Out = TaskStatus>, M: Send + Sync + 'static> Step<S, M> {
+impl<S: System<In = In<Entity>, Out = TaskStatus>, M: Send + Sync + 'static> TaskSystem<S, M> {
     pub fn new<I>(system: I) -> Self
     where
         I: IntoSystem<In<Entity>, TaskStatus, M, System = S>,
@@ -36,7 +36,7 @@ impl<S: System<In = In<Entity>, Out = TaskStatus>, M: Send + Sync + 'static> Ste
             }
             let system = {
                 let mut entity_world = world.entity_mut(entity);
-                let Some(mut func_step) = entity_world.get_mut::<Step<S, M>>() else {
+                let Some(mut func_step) = entity_world.get_mut::<TaskSystem<S, M>>() else {
                     // Already removed
                     return Ok(());
                 };
@@ -45,8 +45,8 @@ impl<S: System<In = In<Entity>, Out = TaskStatus>, M: Send + Sync + 'static> Ste
             let system_id = world.register_system(system);
             world
                 .entity_mut(entity)
-                .insert(RegisteredStep { system_id })
-                .remove::<Step<S, M>>();
+                .insert(RegisteredTaskSystem { system_id })
+                .remove::<TaskSystem<S, M>>();
 
             Ok(())
         });
@@ -54,7 +54,7 @@ impl<S: System<In = In<Entity>, Out = TaskStatus>, M: Send + Sync + 'static> Ste
 }
 
 impl<S: System<In = In<Entity>, Out = TaskStatus> + Clone, M: Send + Sync + 'static + Clone> Clone
-    for Step<S, M>
+    for TaskSystem<S, M>
 {
     fn clone(&self) -> Self {
         Self {

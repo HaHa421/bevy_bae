@@ -1,14 +1,15 @@
-use std::ops::{Range, RangeBounds};
+use std::ops::RangeBounds;
 
 use ustr::Ustr;
 
 use crate::prelude::*;
 
-pub mod builtin;
 pub mod relationship;
 
-#[derive(Component)]
+#[derive(Component, Reflect)]
+#[reflect(Component)]
 pub struct Condition {
+    #[reflect(ignore, default = "Condition::true_pred")]
     predicate: Box<dyn Fn(&Props) -> bool + Send + Sync + 'static>,
 }
 
@@ -50,6 +51,14 @@ impl Condition {
         Self::new(|props| range.contains(props.get_value(name).num()))
     }
 
+    pub fn always_true() -> Self {
+        Self::new(|_| true)
+    }
+
+    pub fn always_false() -> Self {
+        Self::new(|_| false)
+    }
+
     pub fn predicate(
         name: impl Into<Ustr>,
         value: impl Into<Value>,
@@ -58,5 +67,9 @@ impl Condition {
         let name = name.into();
         let value = value.into();
         Self::new(move |props| predicate(props.get_value(name), Some(value)))
+    }
+
+    fn true_pred() -> Box<dyn Fn(&Props) -> bool + Send + Sync + 'static> {
+        Box::new(|_| true)
     }
 }

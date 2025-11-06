@@ -45,6 +45,7 @@ impl<C: CompoundTask> Eq for TaskOf<C> {}
 
 #[derive(Component, Deref, Reflect, Debug, Default, PartialEq, Eq)]
 #[relationship_target(relationship = TaskOf<C>, linked_spawn)]
+#[reflect(Component)]
 pub struct Tasks<C: CompoundTask> {
     #[deref]
     #[relationship]

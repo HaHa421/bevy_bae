@@ -11,6 +11,7 @@ pub struct EffectOf(pub Entity);
 
 #[derive(Component, Deref, Reflect, Debug, Default, PartialEq, Eq)]
 #[relationship_target(relationship = EffectOf, linked_spawn)]
+#[reflect(Component)]
 pub struct Effects(Vec<Entity>);
 
 impl<'a> IntoIterator for &'a Effects {
