@@ -30,7 +30,7 @@ fn trunk_thumper_domain() -> impl Bundle {
                 ),
                 (
                     Name::new("Patrol bridges"),
-                    conditions![AlwaysTrue],
+                    conditions![Condition::always_true()],
                     Sequence,
                     tasks!(Sequence[
                         (
