@@ -1,10 +1,9 @@
 pub mod prelude {
     pub use crate::{
         condition::{
-            Condition, IntoCondition,
+            Condition,
             relationship::{
-                ConditionOf, ConditionSpawner, ConditionSpawnerCommands, Conditions,
-                IntoConditionBundle, conditions,
+                ConditionOf, ConditionSpawner, ConditionSpawnerCommands, Conditions, conditions,
             },
         },
         effect::{
@@ -24,11 +23,9 @@ pub mod prelude {
             primitive::Step,
         },
     };
+    pub use bevy_mod_props::{self, Props, Value};
     pub(crate) use {
-        bevy_app::prelude::*,
-        bevy_derive::{Deref, DerefMut},
-        bevy_ecs::prelude::*,
-        bevy_reflect::prelude::*,
+        bevy_app::prelude::*, bevy_derive::Deref, bevy_ecs::prelude::*, bevy_reflect::prelude::*,
     };
 }
 extern crate alloc;
@@ -41,5 +38,5 @@ pub mod task;
 
 pub struct BaePlugin;
 impl Plugin for BaePlugin {
-    fn build(&self, app: &mut App) {}
+    fn build(&self, _app: &mut App) {}
 }

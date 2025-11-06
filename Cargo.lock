@@ -513,9 +513,10 @@ dependencies = [
  "bevy_bae_macros",
  "bevy_derive",
  "bevy_ecs",
+ "bevy_mod_props",
  "bevy_ptr",
  "bevy_reflect",
- "log",
+ "ustr",
  "variadics_please",
 ]
 
@@ -986,6 +987,15 @@ name = "bevy_mikktspace"
 version = "0.17.0-dev"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "7ef8e4b7e61dfe7719bb03c884dc270cd46a82efb40f93e9933b990c5c190c59"
+
+[[package]]
+name = "bevy_mod_props"
+version = "0.1.0"
+source = "git+https://github.com/NthTensor/trill#f9c98738257d7f7b75c36089d096266310c1b85f"
+dependencies = [
+ "bevy_ecs",
+ "ustr",
+]
 
 [[package]]
 name = "bevy_pbr"
@@ -4523,6 +4533,18 @@ name = "unicode-xid"
 version = "0.2.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "ebc1c04c71510c7f702b52b7c350734c9ff1295c464a03335b00bb84fc54f853"
+
+[[package]]
+name = "ustr"
+version = "1.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "18b19e258aa08450f93369cf56dd78063586adf19e92a75b338a800f799a0208"
+dependencies = [
+ "ahash",
+ "byteorder",
+ "lazy_static",
+ "parking_lot",
+]
 
 [[package]]
 name = "uuid"

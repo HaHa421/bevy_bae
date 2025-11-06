@@ -1,6 +1,6 @@
-use bevy_ecs::system::SystemId;
-use bevy_ecs::{lifecycle::HookContext, world::DeferredWorld};
-use core::marker::PhantomData;
+use std::ops::{Range, RangeBounds};
+
+use ustr::Ustr;
 
 use crate::prelude::*;
 
@@ -8,79 +8,55 @@ pub mod builtin;
 pub mod relationship;
 
 #[derive(Component)]
-pub struct RegisteredCondition {
-    pub system_id: SystemId<In<Entity>, bool>,
+pub struct Condition {
+    predicate: Box<dyn Fn(&Props) -> bool + Send + Sync + 'static>,
 }
 
-#[derive(Component)]
-#[component(on_add = Condition::<S, M>::queue_into_condition)]
-pub struct Condition<S: System<In = In<Entity>, Out = bool>, M: Send + Sync + 'static> {
-    system: Option<S>,
-    marker: PhantomData<M>,
-}
-
-pub trait IntoCondition {
-    type System: System<In = In<Entity>, Out = bool> + Send + Sync + 'static;
-    type Marker: Send + Sync + 'static;
-
-    fn into_condition(self) -> Condition<Self::System, Self::Marker>;
-}
-
-impl<S: System<In = In<Entity>, Out = bool>, M: Send + Sync + 'static> Condition<S, M> {
-    pub fn new<I>(system: I) -> Self
-    where
-        I: IntoSystem<In<Entity>, bool, M, System = S>,
-    {
+impl Condition {
+    pub fn new(predicate: impl Fn(&Props) -> bool + Send + Sync + 'static) -> Self {
         Self {
-            system: Some(IntoSystem::into_system(system)),
-            marker: PhantomData,
+            predicate: Box::new(predicate),
         }
     }
 
-    fn queue_into_condition(mut world: DeferredWorld, ctx: HookContext) {
-        let entity = ctx.entity;
-        world.commands().queue(move |world: &mut World| -> Result {
-            if world.get_entity(entity).is_err() {
-                // Already despawned
-                return Ok(());
-            }
-            let system = {
-                let mut entity_world = world.entity_mut(entity);
-                let Some(mut func_condition) = entity_world.get_mut::<Condition<S, M>>() else {
-                    // Already removed
-                    return Ok(());
-                };
-                func_condition.system.take().unwrap()
-            };
-            let system_id = world.register_system(system);
-            world
-                .entity_mut(entity)
-                .insert(RegisteredCondition { system_id })
-                .remove::<Condition<S, M>>();
-
-            Ok(())
-        });
+    pub fn eq(name: impl Into<Ustr>, value: impl Into<Value>) -> Self {
+        Self::predicate(name, value, |a, b| a == b)
     }
-}
 
-impl<S: System<In = In<Entity>, Out = bool>, M: Send + Sync + 'static> IntoCondition
-    for Condition<S, M>
-{
-    type System = S;
-    type Marker = M;
-
-    fn into_condition(self) -> Condition<Self::System, Self::Marker> {
-        self
+    pub fn neq(name: impl Into<Ustr>, value: impl Into<Value>) -> Self {
+        Self::predicate(name, value, |a, b| a != b)
     }
-}
 
-impl<S: System<In = In<Entity>, Out = bool> + Clone, M: Send + Sync + 'static + Clone> Clone
-    for Condition<S, M>
-{
-    fn clone(&self) -> Self {
-        Self {
-            system: self.system.clone(),
-            marker: PhantomData,
-        }
+    pub fn gt(name: impl Into<Ustr>, value: impl Into<Value>) -> Self {
+        Self::predicate(name, value, |a, b| a > b)
+    }
+
+    pub fn gte(name: impl Into<Ustr>, value: impl Into<Value>) -> Self {
+        Self::predicate(name, value, |a, b| a >= b)
+    }
+
+    pub fn lt(name: impl Into<Ustr>, value: impl Into<Value>) -> Self {
+        Self::predicate(name, value, |a, b| a < b)
+    }
+
+    pub fn lte(name: impl Into<Ustr>, value: impl Into<Value>) -> Self {
+        Self::predicate(name, value, |a, b| a <= b)
+    }
+
+    pub fn in_range<T: PartialOrd + Into<Value>>(
+        name: impl Into<Ustr>,
+        range: impl RangeBounds<T>,
+    ) -> Self {
+        Self::new(|props| range.contains(props.get_value(name).num()))
+    }
+
+    pub fn predicate(
+        name: impl Into<Ustr>,
+        value: impl Into<Value>,
+        predicate: impl Fn(Option<Value>, Option<Value>) -> bool + Send + Sync + 'static,
+    ) -> Self {
+        let name = name.into();
+        let value = value.into();
+        Self::new(move |props| predicate(props.get_value(name), Some(value)))
     }
 }

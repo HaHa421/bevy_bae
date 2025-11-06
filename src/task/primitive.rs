@@ -6,27 +6,20 @@ use crate::prelude::*;
 
 #[derive(Component)]
 pub struct RegisteredStep {
-    pub system_id: SystemId<In<Entity>, bool>,
+    pub system_id: SystemId<In<Entity>, TaskStatus>,
 }
 
 #[derive(Component)]
 #[component(on_add = Step::<S, M>::queue_into_step)]
-pub struct Step<S: System<In = In<Entity>, Out = bool>, M: Send + Sync + 'static> {
+pub struct Step<S: System<In = In<Entity>, Out = TaskStatus>, M: Send + Sync + 'static> {
     system: Option<S>,
     marker: PhantomData<M>,
 }
 
-pub trait IntoStep {
-    type System: System<In = In<Entity>, Out = bool> + Send + Sync + 'static;
-    type Marker: Send + Sync + 'static;
-
-    fn into_step(self) -> Step<Self::System, Self::Marker>;
-}
-
-impl<S: System<In = In<Entity>, Out = bool>, M: Send + Sync + 'static> Step<S, M> {
+impl<S: System<In = In<Entity>, Out = TaskStatus>, M: Send + Sync + 'static> Step<S, M> {
     pub fn new<I>(system: I) -> Self
     where
-        I: IntoSystem<In<Entity>, bool, M, System = S>,
+        I: IntoSystem<In<Entity>, TaskStatus, M, System = S>,
     {
         Self {
             system: Some(IntoSystem::into_system(system)),
@@ -60,16 +53,7 @@ impl<S: System<In = In<Entity>, Out = bool>, M: Send + Sync + 'static> Step<S, M
     }
 }
 
-impl<S: System<In = In<Entity>, Out = bool>, M: Send + Sync + 'static> IntoStep for Step<S, M> {
-    type System = S;
-    type Marker = M;
-
-    fn into_step(self) -> Step<Self::System, Self::Marker> {
-        self
-    }
-}
-
-impl<S: System<In = In<Entity>, Out = bool> + Clone, M: Send + Sync + 'static + Clone> Clone
+impl<S: System<In = In<Entity>, Out = TaskStatus> + Clone, M: Send + Sync + 'static + Clone> Clone
     for Step<S, M>
 {
     fn clone(&self) -> Self {
