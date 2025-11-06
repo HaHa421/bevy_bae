@@ -24,6 +24,12 @@ impl Effect {
         Self::new(move |props| props.set(name, value))
     }
 
+    pub fn toggle(name: impl Into<Ustr>) -> Self {
+        let name = name.into();
+
+        Self::new(move |props| props.set(name, !props[name].bool()))
+    }
+
     pub fn inc<T: Into<Value> + Default>(
         name: impl Into<Ustr>,
         value: impl Into<Value> + Default,
