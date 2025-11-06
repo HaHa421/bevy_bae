@@ -3,7 +3,6 @@ use crate::prelude::*;
 pub(crate) trait ValueExt: Copy {
     fn num(self) -> f32;
     fn bool(self) -> bool;
-    fn str(self) -> String;
     fn eq(self, other: Self) -> bool;
     fn ne(self, other: Self) -> bool;
 }
@@ -14,9 +13,6 @@ impl ValueExt for Value {
     }
     fn bool(self) -> bool {
         self.try_into().expect("Cannot convert to boolean")
-    }
-    fn str(self) -> String {
-        self.to_string()
     }
     fn eq(self, other: Self) -> bool {
         match (self, other) {

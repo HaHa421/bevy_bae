@@ -1,7 +1,9 @@
 use bevy::prelude::*;
 use bevy_bae::prelude::*;
 
-fn main() {}
+fn main() {
+    let _behavior = trunk_thumper_domain();
+}
 
 fn trunk_thumper_domain() -> impl Bundle {
     (
