@@ -3,11 +3,14 @@ use bevy_ecs::{lifecycle::HookContext, world::DeferredWorld};
 
 use crate::prelude::*;
 
-#[derive(Component)]
+#[derive(Component, Reflect)]
+#[reflect(Component)]
 #[component(on_insert = Self::on_insert_hook, on_replace = Self::on_replace_hook)]
 pub struct TaskSystem {
+    #[reflect(ignore)]
     register_system:
         Option<Box<dyn FnOnce(&mut Commands) -> SystemId<In<Entity>, TaskStatus> + Send + Sync>>,
+    #[reflect(ignore)]
     system_id: Option<SystemId<In<Entity>, TaskStatus>>,
 }
 

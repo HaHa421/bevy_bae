@@ -8,14 +8,18 @@ pub mod relationship;
 #[reflect(Component)]
 pub struct Effect {
     #[reflect(ignore, default = "Effect::noop")]
-    effect: Box<dyn FnMut(&mut Props) + Send + Sync + 'static>,
+    effect: Box<dyn Fn(&mut Props) + Send + Sync + 'static>,
 }
 
 impl Effect {
-    pub fn new(predicate: impl FnMut(&mut Props) + Send + Sync + 'static) -> Self {
+    pub fn new(predicate: impl Fn(&mut Props) + Send + Sync + 'static) -> Self {
         Self {
             effect: Box::new(predicate),
         }
+    }
+
+    pub fn apply(&self, props: &mut Props) {
+        (self.effect)(props);
     }
 
     pub fn set(name: impl Into<Ustr>, value: impl Into<Value>) -> Self {
@@ -75,7 +79,7 @@ impl Effect {
         })
     }
 
-    fn noop() -> Box<dyn FnMut(&mut Props) + Send + Sync + 'static> {
+    fn noop() -> Box<dyn Fn(&mut Props) + Send + Sync + 'static> {
         Box::new(|_| {})
     }
 }

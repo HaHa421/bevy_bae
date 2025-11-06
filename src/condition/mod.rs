@@ -20,6 +20,10 @@ impl Condition {
         }
     }
 
+    pub fn is_fullfilled(&self, props: &Props) -> bool {
+        (self.predicate)(props)
+    }
+
     pub fn eq(name: impl Into<Ustr>, value: impl Into<Value>) -> Self {
         Self::predicate(name, value, |a, b| a.eq(b))
     }
