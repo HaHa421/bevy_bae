@@ -4,6 +4,7 @@ use core::marker::PhantomData;
 
 use crate::prelude::*;
 
+pub mod builtin;
 pub mod relationship;
 
 #[derive(Component)]
@@ -12,28 +13,26 @@ pub struct RegisteredCondition {
 }
 
 #[derive(Component)]
-#[component(on_add = Condition::<I, M>::queue_into_condition)]
-pub struct Condition<
-    I: IntoSystem<In<Entity>, bool, M> + Send + Sync + 'static,
-    M: Send + Sync + 'static,
-> {
-    system: Option<I>,
+#[component(on_add = Condition::<S, M>::queue_into_condition)]
+pub struct Condition<S: System<In = In<Entity>, Out = bool>, M: Send + Sync + 'static> {
+    system: Option<S>,
     marker: PhantomData<M>,
 }
 
 pub trait IntoCondition {
-    type System: IntoSystem<In<Entity>, bool, Self::Marker> + Send + Sync + 'static;
+    type System: System<In = In<Entity>, Out = bool> + Send + Sync + 'static;
     type Marker: Send + Sync + 'static;
 
     fn into_condition(self) -> Condition<Self::System, Self::Marker>;
 }
 
-impl<M: Send + Sync + 'static, I: IntoSystem<In<Entity>, bool, M> + Send + Sync + 'static>
-    Condition<I, M>
-{
-    pub fn new(system: I) -> Self {
+impl<S: System<In = In<Entity>, Out = bool>, M: Send + Sync + 'static> Condition<S, M> {
+    pub fn new<I>(system: I) -> Self
+    where
+        I: IntoSystem<In<Entity>, bool, M, System = S>,
+    {
         Self {
-            system: Some(system),
+            system: Some(IntoSystem::into_system(system)),
             marker: PhantomData,
         }
     }
@@ -47,7 +46,7 @@ impl<M: Send + Sync + 'static, I: IntoSystem<In<Entity>, bool, M> + Send + Sync 
             }
             let system = {
                 let mut entity_world = world.entity_mut(entity);
-                let Some(mut func_condition) = entity_world.get_mut::<Condition<I, M>>() else {
+                let Some(mut func_condition) = entity_world.get_mut::<Condition<S, M>>() else {
                     // Already removed
                     return Ok(());
                 };
@@ -57,20 +56,31 @@ impl<M: Send + Sync + 'static, I: IntoSystem<In<Entity>, bool, M> + Send + Sync 
             world
                 .entity_mut(entity)
                 .insert(RegisteredCondition { system_id })
-                .remove::<Condition<I, M>>();
+                .remove::<Condition<S, M>>();
 
             Ok(())
         });
     }
 }
 
-impl<M: Send + Sync + 'static, I: IntoSystem<In<Entity>, bool, M> + Send + Sync + 'static>
-    IntoCondition for Condition<I, M>
+impl<S: System<In = In<Entity>, Out = bool>, M: Send + Sync + 'static> IntoCondition
+    for Condition<S, M>
 {
+    type System = S;
     type Marker = M;
-    type System = I;
 
     fn into_condition(self) -> Condition<Self::System, Self::Marker> {
         self
+    }
+}
+
+impl<S: System<In = In<Entity>, Out = bool> + Clone, M: Send + Sync + 'static + Clone> Clone
+    for Condition<S, M>
+{
+    fn clone(&self) -> Self {
+        Self {
+            system: self.system.clone(),
+            marker: PhantomData,
+        }
     }
 }

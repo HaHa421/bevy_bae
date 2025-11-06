@@ -10,22 +10,19 @@ fn trunk_thumper_domain() -> impl Bundle {
         tasks!(Select[
                 (
                     Name::new("Beat up enemy"),
-                    conditions![(
-                        Condition::new(|In(entity): In<Entity>, names: Query<NameOrEntity>| -> bool {
-                            true
-                        }),
-                    )],
+                    conditions![
+                        Condition::has("can_see_enemy")
+                    ],
                     Sequence,
                     tasks!(Sequence[
                         (
                             Name::new("Navigate to enemy"),
                             Step::new(navigate_to_enemy),
-                            effects![PropEffect("location", "enemy")],
+                            effects![PropEffect::set("location", "enemy")],
                         ),
                         (
                             Name::new("Do trunk slam"),
                             Step::new(do_trunk_slam),
-                            effects![PropEffect("play_sound", "Aha! Take this!!!")],
                         ),
                     ]),
                 ),
@@ -37,17 +34,15 @@ fn trunk_thumper_domain() -> impl Bundle {
                         (
                             Name::new("Choose best bridge to check for enemies"),
                             Step::new(choose_bridge_to_check),
-                            effects![PropEffect("play_sound", "Hmm where are those disgusting humies..")],
                         ),
                         (
                             Name::new("Go to bridge"),
                             Step::new(navigate_to_bridge),
-                            effects![PropEffect("location", "bridge")],
+                            effects![PropEffect::set("location", "bridge")],
                         ),
                         (
                             Name::new("Check if anything is out of the ordinary"),
                             Step::new(check_bridge),
-                            effects![PropEffect("play_sound", "Alright, let's see what we have here.")],
                         ),
                     ]),
                 )
