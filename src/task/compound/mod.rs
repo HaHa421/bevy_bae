@@ -1,26 +1,18 @@
 use core::any::TypeId;
 use std::collections::VecDeque;
 
-use bevy_ecs::world::FilteredEntityRef;
 use disqualified::ShortName;
 
-use crate::{prelude::*, task::primitive::OperatorId};
+use crate::{
+    prelude::*,
+    task::{BaeTask, primitive::OperatorId},
+};
 
 pub mod relationship;
 pub mod select;
 pub mod sequence;
 
-pub trait CompoundAppExt {
-    fn add_compound_task<C: CompoundTask>(&mut self) -> &mut Self;
-}
-
-impl CompoundAppExt for App {
-    fn add_compound_task<C: CompoundTask>(&mut self) -> &mut Self {
-        todo!();
-    }
-}
-
-pub trait CompoundTask: Component {
+pub trait CompoundTask: Component + BaeTask {
     fn decompose(
         entity: Entity,
         world: &World,
@@ -29,12 +21,13 @@ pub trait CompoundTask: Component {
     );
 }
 
+impl<T: CompoundTask> BaeTask for T {}
+
 #[derive(Component)]
 struct TypeErasedCompoundTask {
     entity: Entity,
     name: ShortName<'static>,
     type_id: TypeId,
-    tasks: for<'a> fn(&Self, &'a FilteredEntityRef) -> Option<&'a [Entity]>,
     decompose: for<'a> fn(
         entity: Entity,
         world: &'a World,
@@ -50,15 +43,29 @@ impl TypeErasedCompoundTask {
             entity,
             name: ShortName::of::<C>(),
             type_id: TypeId::of::<C>(),
-            tasks: Self::tasks_typed::<C>,
             decompose: C::decompose,
         }
     }
+}
 
-    fn tasks_typed<'a, C: CompoundTask>(
-        &self,
-        context: &'a FilteredEntityRef,
-    ) -> Option<&'a [Entity]> {
-        context.get::<Tasks<C>>().map(|actions| &***actions)
+pub trait CompoundAppExt {
+    fn add_compound_task<C: CompoundTask>(&mut self) -> &mut Self;
+}
+
+impl CompoundAppExt for App {
+    fn add_compound_task<C: CompoundTask>(&mut self) -> &mut Self {
+        self.add_observer(insert_type_erased_task::<C>)
+            .add_observer(remove_type_erased_task::<C>)
     }
+}
+
+fn insert_type_erased_task<C: CompoundTask>(insert: On<Insert, C>, mut commands: Commands) {
+    commands
+        .entity(insert.entity)
+        .try_insert(TypeErasedCompoundTask::new::<C>(insert.entity));
+}
+fn remove_type_erased_task<C: CompoundTask>(remove: On<Remove, C>, mut commands: Commands) {
+    commands
+        .entity(remove.entity)
+        .try_remove::<TypeErasedCompoundTask>();
 }

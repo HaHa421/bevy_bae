@@ -1,4 +1,5 @@
 use crate::prelude::*;
+use crate::task::BaeTask;
 use alloc::slice;
 use bevy_ecs::relationship::{RelatedSpawner, RelatedSpawnerCommands};
 use core::{
@@ -7,54 +8,17 @@ use core::{
     marker::PhantomData,
 };
 
-#[derive(Component, Deref, Reflect)]
+#[derive(Component, Deref, Reflect, Debug, PartialEq, Eq, Clone)]
+#[relationship(relationship_target = BaeTasks)]
 #[reflect(Component)]
-#[relationship(relationship_target = Tasks<C>)]
-pub struct TaskOf<C: CompoundTask> {
-    #[deref]
-    #[relationship]
-    entity: Entity,
-    #[reflect(ignore)]
-    marker: PhantomData<C>,
-}
-
-impl<C: CompoundTask> Debug for TaskOf<C> {
-    fn fmt(&self, f: &mut Formatter) -> fmt::Result {
-        f.debug_struct("TaskOf")
-            .field("entity", &self.entity)
-            .finish()
-    }
-}
-
-impl<C: CompoundTask> Clone for TaskOf<C> {
-    fn clone(&self) -> Self {
-        Self {
-            entity: self.entity,
-            marker: PhantomData,
-        }
-    }
-}
-
-impl<C: CompoundTask> PartialEq for TaskOf<C> {
-    fn eq(&self, other: &Self) -> bool {
-        self.entity == other.entity
-    }
-}
-
-impl<C: CompoundTask> Eq for TaskOf<C> {}
+pub struct BaeTaskOf(pub Entity);
 
 #[derive(Component, Deref, Reflect, Debug, Default, PartialEq, Eq)]
-#[relationship_target(relationship = TaskOf<C>, linked_spawn)]
+#[relationship_target(relationship = BaeTaskOf, linked_spawn)]
 #[reflect(Component)]
-pub struct Tasks<C: CompoundTask> {
-    #[deref]
-    #[relationship]
-    entities: Vec<Entity>,
-    #[reflect(ignore)]
-    marker: PhantomData<C>,
-}
+pub struct BaeTasks(Vec<Entity>);
 
-impl<'a, C: CompoundTask> IntoIterator for &'a Tasks<C> {
+impl<'a> IntoIterator for &'a BaeTasks {
     type Item = Entity;
     type IntoIter = Copied<slice::Iter<'a, Entity>>;
 
@@ -63,15 +27,42 @@ impl<'a, C: CompoundTask> IntoIterator for &'a Tasks<C> {
     }
 }
 
-pub type TaskSpawner<'w, C> = RelatedSpawner<'w, TaskOf<C>>;
-
-pub type TaskSpawnerCommands<'w, C> = RelatedSpawnerCommands<'w, TaskOf<C>>;
+pub type BaeTaskSpawner<'w> = RelatedSpawner<'w, BaeTaskOf>;
+pub type BaeTaskSpawnerCommands<'w> = RelatedSpawnerCommands<'w, BaeTaskOf>;
 
 #[macro_export]
 macro_rules! tasks {
-    ($compound_type:ty [$($task:expr),*$(,)?]) => {
-        ::bevy::prelude::related!($crate::prelude::Tasks<$compound_type>[$($task),*])
+    [$($condition:expr),*$(,)?] => {
+        ::bevy::prelude::related!($crate::prelude::BaeTasks[$($crate::prelude::IntoTaskBundle::into_task_bundle($condition)),*])
     };
 }
 
 pub use tasks;
+
+#[diagnostic::on_unimplemented(
+    message = "`{Self}` is not a valid task bundle. The first element must be either an `Operator` or a component that implementes `CompositeTask`, like `Select` or `Sequence`.",
+    label = "invalid task bundle"
+)]
+pub trait IntoTaskBundle {
+    fn into_task_bundle(self) -> impl Bundle;
+}
+
+impl<B: BaeTask> IntoTaskBundle for B {
+    fn into_task_bundle(self) -> impl Bundle {
+        self
+    }
+}
+
+macro_rules! impl_into_task_bundle {
+    ($($C:ident),*) => {
+        impl<B: BaeTask, $($C: Bundle,)*> IntoTaskBundle for (B, $($C),*) {
+            #[allow(non_snake_case, reason = "tuple unpack")]
+            fn into_task_bundle(self) -> impl Bundle {
+                let (b, $($C),* ) = self;
+                (b, $($C),*)
+            }
+        }
+    }
+}
+
+variadics_please::all_tuples!(impl_into_task_bundle, 0, 14, C);

@@ -9,3 +9,5 @@ pub enum TaskStatus {
     Success,
     Failure,
 }
+
+trait BaeTask: Component {}

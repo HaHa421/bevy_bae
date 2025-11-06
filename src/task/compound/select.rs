@@ -1,4 +1,7 @@
-use crate::{prelude::*, task::primitive::OperatorId};
+use crate::{
+    prelude::*,
+    task::{BaeTask, primitive::OperatorId},
+};
 
 #[derive(Component, Debug, Reflect)]
 #[reflect(Component)]

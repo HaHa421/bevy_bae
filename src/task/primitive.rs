@@ -4,6 +4,7 @@ use bevy_ecs::system::SystemId;
 use bevy_ecs::{lifecycle::HookContext, world::DeferredWorld};
 
 use crate::prelude::*;
+use crate::task::BaeTask;
 
 pub type OperatorId = SystemId<In<Entity>, TaskStatus>;
 
@@ -16,6 +17,8 @@ pub struct Operator {
     #[reflect(ignore)]
     system_id: Option<OperatorId>,
 }
+
+impl BaeTask for Operator {}
 
 impl Operator {
     pub fn new<S, M>(system: S) -> Self

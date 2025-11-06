@@ -18,7 +18,10 @@ pub mod prelude {
             TaskStatus,
             compound::{
                 CompoundTask,
-                relationship::{TaskOf, TaskSpawner, TaskSpawnerCommands, Tasks, tasks},
+                relationship::{
+                    BaeTaskOf, BaeTaskSpawner, BaeTaskSpawnerCommands, BaeTasks, IntoTaskBundle,
+                    tasks,
+                },
                 select::Select,
                 sequence::Sequence,
             },
@@ -57,6 +60,8 @@ impl Default for BaePlugin {
 impl Plugin for BaePlugin {
     fn build(&self, app: &mut App) {
         app.configure_sets(self.schedule, (BaeSystems::RunTaskSystems,).chain());
+        app.world_mut().register_component::<Condition>();
+        app.world_mut().register_component::<Effect>();
     }
 }
 

@@ -36,6 +36,10 @@ macro_rules! effects {
 
 pub use effects;
 
+#[diagnostic::on_unimplemented(
+    message = "`{Self}` is not a valid relationship bundle. The first element must be an `Effect`.",
+    label = "invalid task bundle"
+)]
 pub trait IntoEffectBundle {
     /// Returns a bundle for a binding.
     fn into_effect_bundle(self) -> impl Bundle;
@@ -47,7 +51,7 @@ impl<B: Into<Effect>> IntoEffectBundle for B {
     }
 }
 
-macro_rules! impl_into_binding_bundle {
+macro_rules! impl_into_effect_bundle {
     ($($C:ident),*) => {
         impl<B: Into<Effect>, $($C: Bundle,)*> IntoEffectBundle for (B, $($C),*) {
             #[allow(non_snake_case, reason = "tuple unpack")]
@@ -59,4 +63,4 @@ macro_rules! impl_into_binding_bundle {
     }
 }
 
-variadics_please::all_tuples!(impl_into_binding_bundle, 0, 14, C);
+variadics_please::all_tuples!(impl_into_effect_bundle, 0, 14, C);

@@ -14,18 +14,10 @@ impl CompoundTask for Sequence {
         props: &mut Props,
         tasks: &mut std::collections::VecDeque<OperatorId>,
     ) {
-        let Some(mut children) = world.try_query::<&Children>() else {
-            warn!("Children was not registered as a component");
-            return;
-        };
-        let Some(mut conditions) = world.try_query::<&Condition>() else {
-            warn!("Conditions was not registered as a component");
-            return;
-        };
-        let Some(mut effects) = world.try_query::<&Effect>() else {
-            warn!("Effects was not registered as a component");
-            return;
-        };
+        let mut children = world.try_query::<&Children>().unwrap();
+        let mut conditions = world.try_query::<&Condition>().unwrap();
+        let mut effects = world.try_query::<&Effect>().unwrap();
+
         if let Some(condition_relations) = world.get::<Conditions>(entity) {
             for condition in conditions.iter_many(world, condition_relations) {
                 if !condition.is_fullfilled(props) {
