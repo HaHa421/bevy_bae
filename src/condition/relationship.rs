@@ -38,7 +38,7 @@ pub use conditions;
 
 #[diagnostic::on_unimplemented(
     message = "`{Self}` is not a valid condition bundle. The first element must be a `Condition`.",
-    label = "invalid task bundle"
+    label = "invalid condition bundle"
 )]
 pub trait IntoConditionBundle {
     /// Returns a bundle for a binding.

@@ -6,7 +6,7 @@ use bevy_ecs::{lifecycle::HookContext, world::DeferredWorld};
 use crate::prelude::*;
 use crate::task::{BaeTask, validation::BaeTaskPresent};
 
-pub type OperatorId = SystemId<In<Entity>, TaskStatus>;
+pub type OperatorId = SystemId<In<OperatorInput>, TaskStatus>;
 
 #[derive(Component, Reflect)]
 #[reflect(Component)]
@@ -24,7 +24,7 @@ impl BaeTask for Operator {}
 impl Operator {
     pub fn new<S, M>(system: S) -> Self
     where
-        S: IntoSystem<In<Entity>, TaskStatus, M>,
+        S: IntoSystem<In<OperatorInput>, TaskStatus, M>,
         S::System: Send + Sync + 'static,
     {
         let system = IntoSystem::into_system(system);
@@ -67,4 +67,9 @@ impl Debug for Operator {
             .field("system_id", &self.system_id)
             .finish()
     }
+}
+
+pub struct OperatorInput {
+    pub planner: Entity,
+    pub operator: Entity,
 }

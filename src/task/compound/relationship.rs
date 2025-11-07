@@ -36,7 +36,7 @@ macro_rules! tasks {
 pub use tasks;
 
 #[diagnostic::on_unimplemented(
-    message = "`{Self}` is not a valid task bundle. The first element must be either an `Operator` or a component that implementes `CompositeTask`, like `Select` or `Sequence`.",
+    message = "`{Self}` is not a valid task bundle. The first element must be either an `Operator` or a component that implements `CompositeTask`, like `Select` or `Sequence`.",
     label = "invalid task bundle"
 )]
 pub trait IntoTaskBundle {

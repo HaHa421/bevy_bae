@@ -38,7 +38,7 @@ pub use effects;
 
 #[diagnostic::on_unimplemented(
     message = "`{Self}` is not a valid relationship bundle. The first element must be an `Effect`.",
-    label = "invalid task bundle"
+    label = "invalid effect bundle"
 )]
 pub trait IntoEffectBundle {
     /// Returns a bundle for a binding.

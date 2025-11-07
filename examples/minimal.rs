@@ -15,7 +15,7 @@ fn trunk_thumper_domain() -> impl Bundle {
                 Name::new("Beat up enemy"),
                 conditions![(
                     Condition::eq("can_see_enemy", true),
-                    Name::new("Can see enemy")
+                    Name::new("Can see enemy"),
                 )],
                 tasks![
                     (
@@ -23,10 +23,10 @@ fn trunk_thumper_domain() -> impl Bundle {
                         Name::new("Navigate to enemy"),
                         effects![(
                             Effect::set("location", "enemy"),
-                            Name::new("Set location to enemy position")
+                            Name::new("Set location to enemy position"),
                         )],
                     ),
-                    (Operator::new(do_trunk_slam), Name::new("Do trunk slam"),),
+                    (Operator::new(do_trunk_slam), Name::new("Do trunk slam")),
                 ],
             ),
             (
@@ -43,7 +43,7 @@ fn trunk_thumper_domain() -> impl Bundle {
                         Name::new("Go to bridge"),
                         effects![(
                             Effect::set("location", "bridge"),
-                            Name::new("Set location to bridge")
+                            Name::new("Set location to bridge"),
                         )],
                     ),
                     (
@@ -56,27 +56,27 @@ fn trunk_thumper_domain() -> impl Bundle {
     )
 }
 
-fn navigate_to_enemy(_step: In<Entity>) -> TaskStatus {
+fn navigate_to_enemy(_step: In<OperatorInput>) -> TaskStatus {
     info!("navigating to enemy");
     TaskStatus::Success
 }
 
-fn do_trunk_slam(_step: In<Entity>) -> TaskStatus {
+fn do_trunk_slam(_step: In<OperatorInput>) -> TaskStatus {
     info!("trunk slam");
     TaskStatus::Success
 }
 
-fn choose_bridge_to_check(_step: In<Entity>) -> TaskStatus {
+fn choose_bridge_to_check(_step: In<OperatorInput>) -> TaskStatus {
     info!("choosing bridge to check");
     TaskStatus::Success
 }
 
-fn navigate_to_bridge(_step: In<Entity>) -> TaskStatus {
+fn navigate_to_bridge(_step: In<OperatorInput>) -> TaskStatus {
     info!("navigating to bridge");
     TaskStatus::Success
 }
 
-fn check_bridge(_step: In<Entity>) -> TaskStatus {
+fn check_bridge(_step: In<OperatorInput>) -> TaskStatus {
     info!("checking bridge");
     TaskStatus::Success
 }

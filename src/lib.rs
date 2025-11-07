@@ -25,7 +25,7 @@ pub mod prelude {
                 select::Select,
                 sequence::Sequence,
             },
-            primitive::Operator,
+            primitive::{Operator, OperatorInput},
         },
     };
     pub use bevy_mod_props::{self, Props, Value};
