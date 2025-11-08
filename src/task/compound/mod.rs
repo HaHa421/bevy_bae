@@ -6,7 +6,7 @@ use disqualified::ShortName;
 use crate::{
     prelude::*,
     task::{
-        BaeTask,
+        Task,
         primitive::OperatorId,
         validation::{
             BaeTaskPresent, insert_bae_task_present_on_add, remove_bae_task_present_on_remove,
@@ -62,25 +62,19 @@ impl CompoundAppExt for App {
     fn add_compound_task<C: CompoundTask>(&mut self) -> &mut Self {
         self.add_observer(insert_type_erased_task::<C>)
             .add_observer(remove_type_erased_task::<C>)
-            .add_observer(insert_bae_task_present_on_add::<BaeTasks<C>>)
-            .add_observer(remove_bae_task_present_on_remove::<BaeTasks<C>>);
-        let _ = self.try_register_required_components::<BaeTasks<C>, BaeTaskPresent>();
+            .add_observer(insert_bae_task_present_on_add::<Tasks<C>>)
+            .add_observer(remove_bae_task_present_on_remove::<Tasks<C>>);
+        let _ = self.try_register_required_components::<Tasks<C>, BaeTaskPresent>();
         self
     }
 }
 
-fn insert_type_erased_task<C: CompoundTask>(
-    insert: On<Insert, BaeTasks<C>>,
-    mut commands: Commands,
-) {
+fn insert_type_erased_task<C: CompoundTask>(insert: On<Insert, Tasks<C>>, mut commands: Commands) {
     commands
         .entity(insert.entity)
         .try_insert(TypeErasedCompoundTask::new::<C>(insert.entity));
 }
-fn remove_type_erased_task<C: CompoundTask>(
-    remove: On<Remove, BaeTasks<C>>,
-    mut commands: Commands,
-) {
+fn remove_type_erased_task<C: CompoundTask>(remove: On<Remove, Tasks<C>>, mut commands: Commands) {
     commands
         .entity(remove.entity)
         .try_remove::<TypeErasedCompoundTask>();

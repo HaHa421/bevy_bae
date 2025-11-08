@@ -19,8 +19,7 @@ pub mod prelude {
             compound::{
                 CompoundTask,
                 relationship::{
-                    BaeTaskOf, BaeTaskSpawner, BaeTaskSpawnerCommands, BaeTasks, IntoTaskBundle,
-                    tasks,
+                    IntoTaskBundle, TaskOf, TaskSpawner, TaskSpawnerCommands, Tasks, tasks,
                 },
                 select::Select,
                 sequence::Sequence,
@@ -50,7 +49,6 @@ pub mod condition;
 pub mod effect;
 pub mod plan;
 pub mod task;
-mod value_ext;
 
 pub struct BaePlugin {
     schedule: Interned<dyn ScheduleLabel>,

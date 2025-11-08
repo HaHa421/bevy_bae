@@ -37,7 +37,7 @@ macro_rules! conditions {
 pub use conditions;
 
 #[diagnostic::on_unimplemented(
-    message = "`{Self}` is not a valid condition bundle. The last element must be a `Condition`.",
+    message = "`conditions!` was not called with a valid condition bundle. The last element must be a `Condition`.",
     label = "invalid condition bundle"
 )]
 pub trait IntoConditionBundle {

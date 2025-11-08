@@ -37,7 +37,7 @@ macro_rules! effects {
 pub use effects;
 
 #[diagnostic::on_unimplemented(
-    message = "`{Self}` is not a valid relationship bundle. The last element must be an `Effect`.",
+    message = "`effects!` was not called with a valid relationship bundle. The last element must be an `Effect`.",
     label = "invalid effect bundle"
 )]
 pub trait IntoEffectBundle {

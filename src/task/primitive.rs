@@ -4,7 +4,7 @@ use bevy_ecs::system::SystemId;
 use bevy_ecs::{lifecycle::HookContext, world::DeferredWorld};
 
 use crate::prelude::*;
-use crate::task::{BaeTask, validation::BaeTaskPresent};
+use crate::task::{Task, validation::BaeTaskPresent};
 
 pub type OperatorId = SystemId<In<OperatorInput>, TaskStatus>;
 
@@ -19,7 +19,7 @@ pub struct Operator {
     system_id: Option<OperatorId>,
 }
 
-impl BaeTask for Operator {}
+impl Task for Operator {}
 
 impl Operator {
     pub fn new<S, M>(system: S) -> Self
