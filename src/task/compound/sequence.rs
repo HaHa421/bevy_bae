@@ -3,8 +3,7 @@ use crate::{
     task::{compound::TypeErasedCompoundTask, primitive::OperatorId},
 };
 
-#[derive(Component, Debug, Reflect)]
-#[reflect(Component)]
+#[derive(Debug, Default, Reflect)]
 pub struct Sequence;
 
 impl CompoundTask for Sequence {

@@ -11,4 +11,4 @@ pub enum TaskStatus {
     Failure,
 }
 
-trait BaeTask: Component {}
+trait BaeTask: Bundle {}

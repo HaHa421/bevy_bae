@@ -2,10 +2,6 @@ use bevy_mod_props::PropsExt;
 
 use crate::prelude::*;
 
-#[derive(Component, Reflect, Debug)]
-#[reflect(Component)]
-pub struct Planner;
-
 #[derive(EntityEvent)]
 pub struct UpdatePlan {
     #[event_target]
@@ -18,10 +14,6 @@ pub(crate) fn update_plan(
     mut conditions: Local<QueryState<&Condition>>,
 ) -> Result {
     let root = update.entity;
-    let planner = world
-        .entity(root)
-        .get::<Planner>()
-        .ok_or("`UpdatePlan` was called on an entity without a `Planner`")?;
     let mut world_state = world.entity(update.entity).props().clone();
 
     let mut tasks_to_process = vec![root];

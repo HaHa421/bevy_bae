@@ -13,7 +13,7 @@ pub mod prelude {
                 EffectOf, EffectSpawner, EffectSpawnerCommands, Effects, IntoEffectBundle, effects,
             },
         },
-        plan::{Planner, UpdatePlan},
+        plan::UpdatePlan,
         task::{
             TaskStatus,
             compound::{

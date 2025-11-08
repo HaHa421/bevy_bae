@@ -49,7 +49,7 @@ mod tests {
             .add_plugins((MinimalPlugins, BaePlugin::default()))
             .add_systems(Startup, |mut commands: Commands| {
                 commands.spawn((
-                    Select,
+                    BaeTasks::<Select>::default(),
                     Operator::new(|_: In<OperatorInput>| TaskStatus::Success),
                 ));
             })
@@ -62,7 +62,10 @@ mod tests {
         let mut app = App::new();
         app.add_plugins((MinimalPlugins, BaePlugin::default()))
             .add_systems(Startup, |mut commands: Commands| {
-                commands.spawn((Select, Sequence));
+                commands.spawn((
+                    BaeTasks::<Select>::default(),
+                    BaeTasks::<Sequence>::default(),
+                ));
             });
         app.finish();
         app.update();
@@ -84,7 +87,7 @@ mod tests {
         App::new()
             .add_plugins((MinimalPlugins, BaePlugin::default()))
             .add_systems(Startup, |mut commands: Commands| {
-                commands.spawn(Select);
+                commands.spawn(BaeTasks::<Select>::default());
             })
             .update();
     }

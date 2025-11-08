@@ -18,7 +18,7 @@ pub mod relationship;
 pub mod select;
 pub mod sequence;
 
-pub trait CompoundTask: Component {
+pub trait CompoundTask: Send + Sync + 'static {
     fn decompose(
         entity: Entity,
         world: &World,
@@ -27,8 +27,6 @@ pub trait CompoundTask: Component {
         index: usize,
     );
 }
-
-impl<T: CompoundTask> BaeTask for T {}
 
 #[derive(Component)]
 struct TypeErasedCompoundTask {
@@ -64,19 +62,25 @@ impl CompoundAppExt for App {
     fn add_compound_task<C: CompoundTask>(&mut self) -> &mut Self {
         self.add_observer(insert_type_erased_task::<C>)
             .add_observer(remove_type_erased_task::<C>)
-            .add_observer(insert_bae_task_present_on_add::<C>)
-            .add_observer(remove_bae_task_present_on_remove::<C>);
-        let _ = self.try_register_required_components::<C, BaeTaskPresent>();
+            .add_observer(insert_bae_task_present_on_add::<BaeTasks<C>>)
+            .add_observer(remove_bae_task_present_on_remove::<BaeTasks<C>>);
+        let _ = self.try_register_required_components::<BaeTasks<C>, BaeTaskPresent>();
         self
     }
 }
 
-fn insert_type_erased_task<C: CompoundTask>(insert: On<Insert, C>, mut commands: Commands) {
+fn insert_type_erased_task<C: CompoundTask>(
+    insert: On<Insert, BaeTasks<C>>,
+    mut commands: Commands,
+) {
     commands
         .entity(insert.entity)
         .try_insert(TypeErasedCompoundTask::new::<C>(insert.entity));
 }
-fn remove_type_erased_task<C: CompoundTask>(remove: On<Remove, C>, mut commands: Commands) {
+fn remove_type_erased_task<C: CompoundTask>(
+    remove: On<Remove, BaeTasks<C>>,
+    mut commands: Commands,
+) {
     commands
         .entity(remove.entity)
         .try_remove::<TypeErasedCompoundTask>();

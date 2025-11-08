@@ -8,16 +8,9 @@ fn main() {
 fn trunk_thumper_domain() -> impl Bundle {
     (
         Name::new("Be Trunk Thumper"),
-        Select,
-        tasks![
+        tasks!(Select[
             (
-                Sequence,
-                Name::new("Beat up enemy"),
-                conditions![(
-                    Condition::eq("can_see_enemy", true),
-                    Name::new("Can see enemy"),
-                )],
-                tasks![
+                tasks!(Sequence[
                     (
                         Operator::new(navigate_to_enemy),
                         Name::new("Navigate to enemy"),
@@ -27,32 +20,36 @@ fn trunk_thumper_domain() -> impl Bundle {
                         )],
                     ),
                     (Operator::new(do_trunk_slam), Name::new("Do trunk slam")),
-                ],
+                ]),
+                conditions![(
+                    Condition::eq("can_see_enemy", true),
+                    Name::new("Can see enemy"),
+                )],
+                Name::new("Beat up enemy"),
             ),
             (
-                Sequence,
-                Name::new("Patrol bridges"),
-                conditions![(Condition::always_true(), Name::new("Always true"))],
-                tasks![
+                tasks!(Sequence[
                     (
                         Operator::new(choose_bridge_to_check),
                         Name::new("Choose best bridge to check for enemies"),
                     ),
                     (
                         Operator::new(navigate_to_bridge),
-                        Name::new("Go to bridge"),
                         effects![(
                             Effect::set("location", "bridge"),
                             Name::new("Set location to bridge"),
                         )],
+                        Name::new("Go to bridge"),
                     ),
                     (
                         Operator::new(check_bridge),
                         Name::new("Check if anything is out of the ordinary"),
                     ),
-                ],
+                ]),
+                conditions![(Condition::always_true(), Name::new("Always true"))],
+                Name::new("Patrol bridges"),
             )
-        ],
+        ]),
     )
 }
 

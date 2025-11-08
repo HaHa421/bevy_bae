@@ -1,7 +1,6 @@
 use crate::{prelude::*, task::primitive::OperatorId};
 
-#[derive(Component, Debug, Reflect)]
-#[reflect(Component)]
+#[derive(Debug, Default, Reflect)]
 pub struct Select;
 
 impl CompoundTask for Select {

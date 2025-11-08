@@ -1,20 +1,35 @@
 use crate::prelude::*;
 use crate::task::BaeTask;
 use alloc::slice;
-use bevy_ecs::relationship::{RelatedSpawner, RelatedSpawnerCommands};
-use core::{fmt::Debug, iter::Copied};
+use bevy_ecs::{
+    relationship::{RelatedSpawner, RelatedSpawnerCommands},
+    spawn::{SpawnRelatedBundle, SpawnableList},
+};
+use core::{fmt::Debug, iter::Copied, marker::PhantomData};
 
 #[derive(Component, Deref, Reflect, Debug, PartialEq, Eq, Clone)]
-#[relationship(relationship_target = BaeTasks)]
+#[relationship(relationship_target = BaeTasks<T>)]
 #[reflect(Component)]
-pub struct BaeTaskOf(pub Entity);
+pub struct BaeTaskOf<T: CompoundTask> {
+    #[deref]
+    #[relationship]
+    entity: Entity,
+    #[reflect(ignore)]
+    marker: PhantomData<T>,
+}
 
 #[derive(Component, Deref, Reflect, Debug, Default, PartialEq, Eq)]
-#[relationship_target(relationship = BaeTaskOf, linked_spawn)]
+#[relationship_target(relationship = BaeTaskOf<T>, linked_spawn)]
 #[reflect(Component)]
-pub struct BaeTasks(Vec<Entity>);
+pub struct BaeTasks<T: CompoundTask> {
+    #[deref]
+    #[relationship]
+    entities: Vec<Entity>,
+    #[reflect(ignore)]
+    marker: PhantomData<T>,
+}
 
-impl<'a> IntoIterator for &'a BaeTasks {
+impl<'a, T: CompoundTask> IntoIterator for &'a BaeTasks<T> {
     type Item = Entity;
     type IntoIter = Copied<slice::Iter<'a, Entity>>;
 
@@ -23,13 +38,18 @@ impl<'a> IntoIterator for &'a BaeTasks {
     }
 }
 
-pub type BaeTaskSpawner<'w> = RelatedSpawner<'w, BaeTaskOf>;
-pub type BaeTaskSpawnerCommands<'w> = RelatedSpawnerCommands<'w, BaeTaskOf>;
+impl<S: SpawnableList<BaeTaskOf<T>> + Send + Sync + 'static, T: CompoundTask> BaeTask
+    for SpawnRelatedBundle<BaeTaskOf<T>, S>
+{
+}
+
+pub type BaeTaskSpawner<'w, T> = RelatedSpawner<'w, BaeTaskOf<T>>;
+pub type BaeTaskSpawnerCommands<'w, T> = RelatedSpawnerCommands<'w, BaeTaskOf<T>>;
 
 #[macro_export]
 macro_rules! tasks {
-    [$($condition:expr),*$(,)?] => {
-        ::bevy::prelude::related!($crate::prelude::BaeTasks[$($crate::prelude::IntoTaskBundle::into_task_bundle($condition)),*])
+    ($compound:ty[$($condition:expr),*$(,)?]) => {
+        ::bevy::prelude::related!($crate::prelude::BaeTasks<$compound>[$($crate::prelude::IntoTaskBundle::into_task_bundle($condition)),*])
     };
 }
 
