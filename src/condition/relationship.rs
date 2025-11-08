@@ -37,7 +37,7 @@ macro_rules! conditions {
 pub use conditions;
 
 #[diagnostic::on_unimplemented(
-    message = "`{Self}` is not a valid condition bundle. The first element must be a `Condition`.",
+    message = "`{Self}` is not a valid condition bundle. The last element must be a `Condition`.",
     label = "invalid condition bundle"
 )]
 pub trait IntoConditionBundle {
@@ -51,16 +51,16 @@ impl<B: Into<Condition>> IntoConditionBundle for B {
     }
 }
 
-macro_rules! impl_into_binding_bundle {
+macro_rules! impl_into_condition_bundle {
     ($($C:ident),*) => {
-        impl<B: Into<Condition>, $($C: Bundle,)*> IntoConditionBundle for (B, $($C),*) {
+        impl<B: Into<Condition>, $($C: Bundle,)*> IntoConditionBundle for ($($C, )* B,) {
             #[allow(non_snake_case, reason = "tuple unpack")]
             fn into_condition_bundle(self) -> impl Bundle {
-                let (b, $($C),* ) = self;
-                (b.into(), $($C),*)
+                let ($($C, )* b,) = self;
+                ($($C, )* b.into(),)
             }
         }
     }
 }
 
-variadics_please::all_tuples!(impl_into_binding_bundle, 0, 14, C);
+variadics_please::all_tuples!(impl_into_condition_bundle, 0, 14, C);

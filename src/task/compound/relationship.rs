@@ -56,7 +56,7 @@ macro_rules! tasks {
 pub use tasks;
 
 #[diagnostic::on_unimplemented(
-    message = "`{Self}` is not a valid task bundle. The first element must be either an `Operator` or a component that implements `CompositeTask`, like `Select` or `Sequence`.",
+    message = "`{Self}` is not a valid task bundle. The last element must be either an `Operator` or a component that implements `CompositeTask`, like `Select` or `Sequence`.",
     label = "invalid task bundle"
 )]
 pub trait IntoTaskBundle {
@@ -71,11 +71,11 @@ impl<B: BaeTask> IntoTaskBundle for B {
 
 macro_rules! impl_into_task_bundle {
     ($($C:ident),*) => {
-        impl<B: BaeTask, $($C: Bundle,)*> IntoTaskBundle for (B, $($C),*) {
+        impl<B: BaeTask, $($C: Bundle,)*> IntoTaskBundle for ($($C, )* B,) {
             #[allow(non_snake_case, reason = "tuple unpack")]
             fn into_task_bundle(self) -> impl Bundle {
-                let (b, $($C),* ) = self;
-                (b, $($C),*)
+                let ($($C, )* b,) = self;
+                ($($C, )* b,)
             }
         }
     }

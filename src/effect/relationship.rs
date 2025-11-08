@@ -37,7 +37,7 @@ macro_rules! effects {
 pub use effects;
 
 #[diagnostic::on_unimplemented(
-    message = "`{Self}` is not a valid relationship bundle. The first element must be an `Effect`.",
+    message = "`{Self}` is not a valid relationship bundle. The last element must be an `Effect`.",
     label = "invalid effect bundle"
 )]
 pub trait IntoEffectBundle {
@@ -53,11 +53,11 @@ impl<B: Into<Effect>> IntoEffectBundle for B {
 
 macro_rules! impl_into_effect_bundle {
     ($($C:ident),*) => {
-        impl<B: Into<Effect>, $($C: Bundle,)*> IntoEffectBundle for (B, $($C),*) {
+        impl<B: Into<Effect>, $($C: Bundle,)*> IntoEffectBundle for ($($C, )* B,) {
             #[allow(non_snake_case, reason = "tuple unpack")]
             fn into_effect_bundle(self) -> impl Bundle {
-                let (b, $($C),* ) = self;
-                (b.into(), $($C),*)
+                let ($($C, )* b,) = self;
+                ($($C, )* b.into(),)
             }
         }
     }
