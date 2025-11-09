@@ -73,7 +73,6 @@ fn decompose_select(
                 }
                 Ok(DecomposeResult::Failure) => continue,
                 Ok(DecomposeResult::Rejection) => todo!(),
-                Ok(DecomposeResult::Partial) => todo!(),
                 Err(_) => continue,
             }
         } else {

@@ -72,7 +72,6 @@ fn decompose_sequence(
                 }
                 Ok(DecomposeResult::Failure) => todo!(),
                 Ok(DecomposeResult::Rejection) => todo!(),
-                Ok(DecomposeResult::Partial) => todo!(),
                 Err(_) => return DecomposeResult::Failure,
             }
         } else {

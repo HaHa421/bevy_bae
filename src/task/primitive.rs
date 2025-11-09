@@ -28,7 +28,23 @@ impl Clone for Operator {
     }
 }
 
+impl PartialEq for Operator {
+    fn eq(&self, other: &Self) -> bool {
+        self.system_id == other.system_id
+    }
+}
+
+impl Eq for Operator {}
+
 impl Task for Operator {}
+
+impl Debug for Operator {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        f.debug_struct("Operator")
+            .field("system_id", &self.system_id)
+            .finish()
+    }
+}
 
 impl Operator {
     pub fn new<S, M>(system: S) -> Self
@@ -43,7 +59,11 @@ impl Operator {
         }
     }
 
-    pub(crate) fn system_id(&self) -> OperatorId {
+    pub fn noop() -> Self {
+        Self::new(|_: In<OperatorInput>| TaskStatus::Success)
+    }
+
+    pub fn system_id(&self) -> OperatorId {
         self.system_id.unwrap()
     }
 
@@ -66,15 +86,6 @@ impl Operator {
             return;
         };
         world.commands().unregister_system(system_id);
-    }
-}
-
-impl Debug for Operator {
-    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        f.debug_struct("Operator")
-            .field("register_system", &"<callback>")
-            .field("system_id", &self.system_id)
-            .finish()
     }
 }
 

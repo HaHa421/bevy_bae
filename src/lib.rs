@@ -1,5 +1,6 @@
 pub mod prelude {
     pub use crate::{
+        BaePlugin, BaeSystems,
         condition::{
             Condition,
             relationship::{
@@ -13,7 +14,7 @@ pub mod prelude {
                 EffectOf, EffectSpawner, EffectSpawnerCommands, Effects, IntoEffectBundle, effects,
             },
         },
-        plan::UpdatePlan,
+        plan::UpdatePlanCommands,
         task::{
             TaskStatus,
             compound::{
@@ -37,7 +38,6 @@ extern crate alloc;
 use bevy_ecs::{intern::Interned, schedule::ScheduleLabel};
 
 use crate::{
-    plan::update_plan,
     prelude::*,
     task::{
         compound::CompoundAppExt,
@@ -70,7 +70,6 @@ impl Plugin for BaePlugin {
             .add_observer(remove_bae_task_present_on_remove::<Operator>);
         app.add_compound_task::<Select>()
             .add_compound_task::<Sequence>();
-        app.add_observer(update_plan);
     }
 }
 

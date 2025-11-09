@@ -2,15 +2,42 @@ use bevy_mod_props::PropsExt;
 
 use crate::prelude::*;
 use crate::task::compound::{DecomposeInput, DecomposeResult, TypeErasedCompoundTask};
+use crate::task::primitive::OperatorId;
 
 #[derive(EntityEvent)]
-pub struct UpdatePlan {
+struct UpdatePlan {
     #[event_target]
     entity: Entity,
 }
 
-pub(crate) fn update_plan(
-    update: On<UpdatePlan>,
+#[derive(Component, Clone, PartialEq, Eq, Reflect, Debug)]
+#[reflect(Component)]
+pub struct Plan(#[reflect(ignore)] pub Vec<OperatorId>);
+
+pub struct UpdatePlanCommand;
+
+impl EntityCommand for UpdatePlanCommand {
+    fn apply(self, entity_world: EntityWorldMut) -> () {
+        let entity = entity_world.id();
+        entity_world
+            .into_world_mut()
+            .run_system_cached_with(update_plan, UpdatePlan { entity })
+            .unwrap()
+    }
+}
+
+pub trait UpdatePlanCommands {
+    fn update_plan(&mut self) -> &mut Self;
+}
+
+impl<'a> UpdatePlanCommands for EntityCommands<'a> {
+    fn update_plan(&mut self) -> &mut Self {
+        self.queue(UpdatePlanCommand)
+    }
+}
+
+fn update_plan(
+    update: In<UpdatePlan>,
     world: &mut World,
     mut conditions: Local<QueryState<&Condition>>,
     mut tasks: Local<QueryState<AnyOf<(&Operator, &TypeErasedCompoundTask)>>>,
@@ -41,7 +68,7 @@ pub(crate) fn update_plan(
             "{name}: Called `UpdatePlan` for an entity without any tasks. Ensure it has either an `Operator` or a `CompoundTask` like `Select` or `Sequence`"
         )));
     };
-    let _plan = if let Some(operator) = operator {
+    let plan = if let Some(operator) = operator {
         // well that was easy: this root has just a single operator
         vec![operator.system_id()]
     } else if let Some(compound_task) = task {
@@ -57,7 +84,6 @@ pub(crate) fn update_plan(
             DecomposeResult::Failure => {
                 todo!();
             }
-            DecomposeResult::Partial => todo!(),
             DecomposeResult::Rejection => todo!(),
         }
     } else {
@@ -65,8 +91,10 @@ pub(crate) fn update_plan(
             "Bevy should guarantee that `AnyOf` contains at least one element that is `Some`"
         )
     };
+
     // No need to apply the effects of the root, as they cannot affect any planning.
     // But if we ever decided to automatically apply effects to the real props, we should put that here!
 
+    world.entity_mut(root).insert(Plan(plan));
     Ok(())
 }

@@ -56,7 +56,6 @@ pub enum DecomposeResult {
         plan: Vec<OperatorId>,
         world_state: Props,
     },
-    Partial,
     Rejection,
     Failure,
 }
