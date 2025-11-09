@@ -9,7 +9,7 @@ use crate::prelude::*;
 #[reflect(Component)]
 pub struct ConditionOf(pub Entity);
 
-#[derive(Component, Deref, Reflect, Debug, Default, PartialEq, Eq)]
+#[derive(Component, Clone, Deref, Reflect, Debug, Default, PartialEq, Eq)]
 #[relationship_target(relationship = ConditionOf, linked_spawn)]
 #[reflect(Component)]
 pub struct Conditions(Vec<Entity>);

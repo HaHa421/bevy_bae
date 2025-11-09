@@ -23,7 +23,7 @@ impl Clone for Operator {
     fn clone(&self) -> Self {
         Self {
             register_system: None,
-            system_id: self.system_id.clone(),
+            system_id: self.system_id,
         }
     }
 }

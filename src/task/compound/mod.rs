@@ -1,4 +1,3 @@
-use alloc::collections::VecDeque;
 use bevy_ecs::{system::SystemId, world::FilteredEntityRef};
 use core::any::TypeId;
 
@@ -28,6 +27,8 @@ pub type DecomposeId = SystemId<In<DecomposeInput>, DecomposeResult>;
 pub struct DecomposeInput {
     pub root: Entity,
     pub compound_task: Entity,
+    pub world_state: Props,
+    pub plan: Vec<OperatorId>,
 }
 
 #[derive(Component, Clone)]
@@ -36,7 +37,6 @@ pub(crate) struct TypeErasedCompoundTask {
     pub(crate) name: ShortName<'static>,
     pub(crate) type_id: TypeId,
     pub(crate) decompose: DecomposeId,
-    pub(crate) tasks: for<'a> fn(&Self, &'a FilteredEntityRef) -> Option<&'a [Entity]>,
 }
 
 impl TypeErasedCompoundTask {
@@ -47,13 +47,15 @@ impl TypeErasedCompoundTask {
             name: ShortName::of::<C>(),
             type_id: TypeId::of::<C>(),
             decompose: id,
-            tasks: Self::tasks_typed::<C>,
         }
     }
 }
 
 pub enum DecomposeResult {
-    Success,
+    Success {
+        plan: Vec<OperatorId>,
+        world_state: Props,
+    },
     Partial,
     Rejection,
     Failure,
