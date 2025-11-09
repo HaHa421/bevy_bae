@@ -1,4 +1,4 @@
-use bevy_ecs::{system::SystemId, world::FilteredEntityRef};
+use bevy_ecs::system::SystemId;
 use core::any::TypeId;
 
 use disqualified::ShortName;

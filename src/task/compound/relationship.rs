@@ -1,9 +1,6 @@
 use crate::prelude::*;
 use alloc::slice;
-use bevy_ecs::{
-    relationship::{RelatedSpawner, RelatedSpawnerCommands},
-    spawn::{SpawnRelatedBundle, SpawnableList},
-};
+use bevy_ecs::relationship::{RelatedSpawner, RelatedSpawnerCommands};
 use core::{fmt::Debug, iter::Copied, marker::PhantomData};
 
 #[derive(Component, Deref, Reflect, Debug, PartialEq, Eq, Clone)]
