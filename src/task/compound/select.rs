@@ -1,7 +1,7 @@
 use crate::{
     prelude::*,
     task::{
-        compound::{DecomposeContext, DecomposeResult},
+        compound::{DecomposeId, DecomposeInput, DecomposeResult},
         primitive::OperatorId,
     },
 };
@@ -10,7 +10,11 @@ use crate::{
 pub struct Select;
 
 impl CompoundTask for Select {
-    fn decompose<'a>(ctx: DecomposeContext<'a>) -> DecomposeResult {
-        todo!()
+    fn register_decompose(commands: &mut Commands) -> DecomposeId {
+        commands.register_system(decompose_select)
     }
+}
+
+fn decompose_select(In(ctx): In<DecomposeInput>) -> DecomposeResult {
+    DecomposeResult::Success
 }

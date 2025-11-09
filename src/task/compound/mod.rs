@@ -1,5 +1,5 @@
 use alloc::collections::VecDeque;
-use bevy_ecs::world::FilteredEntityRef;
+use bevy_ecs::{system::SystemId, world::FilteredEntityRef};
 use core::any::TypeId;
 
 use disqualified::ShortName;
@@ -19,25 +19,15 @@ pub mod select;
 pub mod sequence;
 
 pub trait CompoundTask: Send + Sync + 'static {
-    fn decompose<'a>(ctx: DecomposeContext<'a>) -> DecomposeResult;
+    fn register_decompose(commands: &mut Commands) -> DecomposeId;
 }
 
+pub type DecomposeId = SystemId<In<DecomposeInput>, DecomposeResult>;
+
 #[derive(Debug)]
-pub struct DecomposeContext<'a> {
+pub struct DecomposeInput {
     pub root: Entity,
     pub compound_task: Entity,
-    pub world: &'a mut World,
-    pub world_state: &'a mut Props,
-    pub plan: &'a mut Vec<OperatorId>,
-    pub queries: DecomposeQueries<'a>,
-}
-
-#[derive(Debug)]
-pub struct DecomposeQueries<'a> {
-    pub conditions: &'a mut QueryState<&'static Condition>,
-    pub effects: &'a mut QueryState<&'static Effect>,
-    pub tasks: &'a mut QueryState<AnyOf<(&'static Operator, &'static TypeErasedCompoundTask)>>,
-    pub names: &'a mut QueryState<NameOrEntity>,
 }
 
 #[derive(Component, Clone)]
@@ -45,18 +35,18 @@ pub(crate) struct TypeErasedCompoundTask {
     pub(crate) entity: Entity,
     pub(crate) name: ShortName<'static>,
     pub(crate) type_id: TypeId,
-    pub(crate) decompose: for<'a> fn(DecomposeContext<'a>) -> DecomposeResult,
+    pub(crate) decompose: DecomposeId,
     pub(crate) tasks: for<'a> fn(&Self, &'a FilteredEntityRef) -> Option<&'a [Entity]>,
 }
 
 impl TypeErasedCompoundTask {
     #[must_use]
-    fn new<C: CompoundTask>(entity: Entity) -> Self {
+    fn new<C: CompoundTask>(entity: Entity, id: DecomposeId) -> Self {
         Self {
             entity,
             name: ShortName::of::<C>(),
             type_id: TypeId::of::<C>(),
-            decompose: C::decompose,
+            decompose: id,
             tasks: Self::tasks_typed::<C>,
         }
     }
@@ -94,9 +84,10 @@ impl CompoundAppExt for App {
 }
 
 fn insert_type_erased_task<C: CompoundTask>(insert: On<Insert, Tasks<C>>, mut commands: Commands) {
+    let system_id = C::register_decompose(&mut commands);
     commands
         .entity(insert.entity)
-        .try_insert(TypeErasedCompoundTask::new::<C>(insert.entity));
+        .try_insert(TypeErasedCompoundTask::new::<C>(insert.entity, system_id));
 }
 fn remove_type_erased_task<C: CompoundTask>(remove: On<Remove, Tasks<C>>, mut commands: Commands) {
     commands
