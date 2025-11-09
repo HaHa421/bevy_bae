@@ -30,6 +30,7 @@ pub mod prelude {
     pub use bevy_mod_props::{self, Props, Value};
     pub(crate) use {
         bevy_app::prelude::*, bevy_derive::Deref, bevy_ecs::prelude::*, bevy_reflect::prelude::*,
+        log::error,
     };
 }
 extern crate alloc;

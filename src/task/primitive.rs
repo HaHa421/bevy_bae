@@ -19,6 +19,15 @@ pub struct Operator {
     system_id: Option<OperatorId>,
 }
 
+impl Clone for Operator {
+    fn clone(&self) -> Self {
+        Self {
+            register_system: None,
+            system_id: self.system_id.clone(),
+        }
+    }
+}
+
 impl Task for Operator {}
 
 impl Operator {

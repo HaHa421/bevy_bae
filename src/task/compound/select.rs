@@ -1,16 +1,16 @@
-use crate::{prelude::*, task::primitive::OperatorId};
+use crate::{
+    prelude::*,
+    task::{
+        compound::{DecomposeContext, DecomposeResult},
+        primitive::OperatorId,
+    },
+};
 
 #[derive(Debug, Default, Reflect)]
 pub struct Select;
 
 impl CompoundTask for Select {
-    fn decompose(
-        _entity: Entity,
-        _world: &World,
-        _props: &mut Props,
-        _tasks: &mut alloc::collections::VecDeque<OperatorId>,
-        _index: usize,
-    ) {
+    fn decompose<'a>(ctx: DecomposeContext<'a>) -> DecomposeResult {
         todo!()
     }
 }
