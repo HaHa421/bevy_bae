@@ -10,5 +10,3 @@ pub enum TaskStatus {
     Success,
     Failure,
 }
-
-trait Task: Bundle {}

@@ -15,48 +15,79 @@ impl CompoundTask for Sequence {
 fn decompose_sequence(
     In(mut ctx): In<DecomposeInput>,
     world: &mut World,
-    mut task_relations: Local<QueryState<&Tasks<Sequence>>>,
+    mut task_relations: Local<QueryState<(NameOrEntity, &Tasks<Sequence>)>>,
     mut individual_tasks: Local<
         QueryState<(
             Entity,
+            NameOrEntity,
             AnyOf<(&Operator, &TypeErasedCompoundTask)>,
-            &Conditions,
-            &Effects,
+            Option<&Conditions>,
+            Option<&Effects>,
         )>,
     >,
-    mut conditions: Local<QueryState<&Condition>>,
-    mut effects: Local<QueryState<&Effect>>,
+    mut conditions: Local<QueryState<(Entity, NameOrEntity, &Condition)>>,
+    mut effects: Local<QueryState<(Entity, NameOrEntity, &Effect)>>,
 ) -> DecomposeResult {
-    let Ok(tasks) = task_relations.get(world, ctx.compound_task) else {
+    let Ok((name, tasks)) = task_relations.get(world, ctx.compound_task) else {
         return DecomposeResult::Failure;
     };
+    let entity = ctx.compound_task;
+    let seq_name = name
+        .name
+        .map(|n| format!("{entity} ({n})"))
+        .unwrap_or_else(|| format!("{entity}"));
+    debug!("sequence {seq_name}: decomposing");
     let individual_tasks: Vec<_> = individual_tasks
         .iter_many(world, tasks)
         .map(
-            |(task_entity, (operator, compound_task), condition_relations, effect_relations)| {
+            |(
+                task_entity,
+                name,
+                (operator, compound_task),
+                condition_relations,
+                effect_relations,
+            )| {
                 (
                     task_entity,
+                    name.name
+                        .map(|n| format!("{task_entity} ({n})"))
+                        .unwrap_or_else(|| format!("{task_entity}")),
                     operator.cloned(),
                     compound_task.cloned(),
-                    condition_relations.clone(),
-                    effect_relations.clone(),
+                    condition_relations.cloned(),
+                    effect_relations.cloned(),
                 )
             },
         )
         .collect();
-    for (task_entity, operator, compound_task, condition_relations, effect_relations) in
+    for (task_entity, task_name, operator, compound_task, condition_relations, effect_relations) in
         individual_tasks
     {
-        if !conditions
-            .iter_many(world, condition_relations.iter())
-            .all(|c| c.is_fullfilled(&mut ctx.world_state))
-        {
-            // todo: can we instead just skip this?
-            return DecomposeResult::Failure;
+        if let Some(condition_relations) = condition_relations {
+            for (entity, name, condition) in conditions.iter_many(world, condition_relations.iter())
+            {
+                let name = name
+                    .name
+                    .map(|n| format!("{entity} ({n})"))
+                    .unwrap_or_else(|| format!("{entity}"));
+                let is_fulfilled = condition.is_fullfilled(&mut ctx.world_state);
+                debug!(
+                    "sequence {seq_name} -> task {task_name} -> condition {name}: {is_fulfilled}"
+                );
+                if !is_fulfilled {
+                    debug!(
+                        "sequence {seq_name} -> task {task_name} -> condition {name}: aborting update due to unfulfilled condition"
+                    );
+                    // todo: can we instead just skip this?
+                    return DecomposeResult::Failure;
+                }
+            }
         }
         if let Some(operator) = operator {
+            debug!("sequence {seq_name} -> task {task_name}: operator");
             ctx.plan.push(operator.system_id());
         } else if let Some(compound_task) = compound_task {
+            debug!("sequence {seq_name} -> task {task_name}: compound");
             match world.run_system_with(
                 compound_task.decompose,
                 DecomposeInput {
@@ -77,11 +108,19 @@ fn decompose_sequence(
         } else {
             unreachable!()
         }
-        for effect in effects.iter_many(world, effect_relations.iter()) {
-            effect.apply(&mut ctx.world_state)
+        if let Some(effect_relations) = effect_relations {
+            for (entity, name, effect) in effects.iter_many(world, effect_relations.iter()) {
+                let name = name
+                    .name
+                    .map(|n| format!("{entity} ({n})"))
+                    .unwrap_or_else(|| format!("{entity}"));
+                debug!("sequence {seq_name} -> task {task_name} -> effect {name}: applied");
+                effect.apply(&mut ctx.world_state)
+            }
         }
     }
 
+    debug!("sequence {seq_name}: done");
     DecomposeResult::Success {
         plan: ctx.plan,
         world_state: ctx.world_state,

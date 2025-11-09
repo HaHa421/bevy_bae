@@ -39,19 +39,32 @@ impl<'a> UpdatePlanCommands for EntityCommands<'a> {
 fn update_plan(
     update: In<UpdatePlan>,
     world: &mut World,
-    mut conditions: Local<QueryState<&Condition>>,
+    mut conditions: Local<QueryState<(Entity, NameOrEntity, &Condition)>>,
     mut tasks: Local<QueryState<AnyOf<(&Operator, &TypeErasedCompoundTask)>>>,
     mut names: Local<QueryState<NameOrEntity>>,
 ) -> Result {
     let root = update.entity;
+    let behav_name = names
+        .get(world, root)
+        .ok()
+        .and_then(|name| name.name.map(|n| format!("{root} ({n})")))
+        .unwrap_or_else(|| format!("{root}"));
+
+    debug!("behavior {behav_name}: Updating plan");
 
     let mut world_state = world.entity(update.entity).props().clone();
     if let Some(condition_relations) = world.get::<Conditions>(root) {
-        let is_fulfilled = conditions
-            .iter_many(world, condition_relations)
-            .all(|condition| condition.is_fullfilled(&mut world_state));
-        if !is_fulfilled {
-            return Ok(());
+        for (entity, name, condition) in conditions.iter_many(world, condition_relations) {
+            let name = name
+                .name
+                .map(|n| format!("{entity} ({n})"))
+                .unwrap_or_else(|| format!("{entity}"));
+            let is_fulfilled = condition.is_fullfilled(&mut world_state);
+            debug!("behavior {behav_name} -> condition {name}: {is_fulfilled}");
+            if !is_fulfilled {
+                debug!("behavior {behav_name}: aborting update due to unfulfilled condition");
+                return Ok(());
+            }
         }
     }
 
@@ -59,19 +72,16 @@ fn update_plan(
         .get(world, root)
         .map(|(o, t)| (o.cloned(), t.cloned()))
     else {
-        let name = names
-            .get(world, root)
-            .ok()
-            .and_then(|name| name.name.map(|n| format!("{root} ({n})")))
-            .unwrap_or_else(|| format!("{root}"));
         return Err(BevyError::from(format!(
-            "{name}: Called `UpdatePlan` for an entity without any tasks. Ensure it has either an `Operator` or a `CompoundTask` like `Select` or `Sequence`"
+            "{behav_name}: Called `UpdatePlan` for an entity without any tasks. Ensure it has either an `Operator` or a `CompoundTask` like `Select` or `Sequence`"
         )));
     };
     let plan = if let Some(operator) = operator {
         // well that was easy: this root has just a single operator
+        debug!("behavior {behav_name}: operator");
         vec![operator.system_id()]
     } else if let Some(compound_task) = task {
+        debug!("behavior {behav_name}: compound task");
         let ctx = DecomposeInput {
             world_state,
             plan: vec![],
@@ -94,6 +104,7 @@ fn update_plan(
 
     // No need to apply the effects of the root, as they cannot affect any planning.
     // But if we ever decided to automatically apply effects to the real props, we should put that here!
+    debug!("behavior {behav_name}: finished with {plan:?}");
 
     world.entity_mut(root).insert(Plan(plan));
     Ok(())

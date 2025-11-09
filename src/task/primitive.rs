@@ -4,7 +4,7 @@ use bevy_ecs::system::SystemId;
 use bevy_ecs::{lifecycle::HookContext, world::DeferredWorld};
 
 use crate::prelude::*;
-use crate::task::{Task, validation::BaeTaskPresent};
+use crate::task::validation::BaeTaskPresent;
 
 pub type OperatorId = SystemId<In<OperatorInput>, TaskStatus>;
 
@@ -35,8 +35,6 @@ impl PartialEq for Operator {
 }
 
 impl Eq for Operator {}
-
-impl Task for Operator {}
 
 impl Debug for Operator {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {

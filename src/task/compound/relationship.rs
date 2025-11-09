@@ -1,5 +1,4 @@
 use crate::prelude::*;
-use crate::task::Task;
 use alloc::slice;
 use bevy_ecs::{
     relationship::{RelatedSpawner, RelatedSpawnerCommands},
@@ -36,11 +35,6 @@ impl<'a, T: CompoundTask> IntoIterator for &'a Tasks<T> {
     fn into_iter(self) -> Self::IntoIter {
         self.iter()
     }
-}
-
-impl<S: SpawnableList<TaskOf<T>> + Send + Sync + 'static, T: CompoundTask> Task
-    for SpawnRelatedBundle<TaskOf<T>, S>
-{
 }
 
 pub type TaskSpawner<'w, T> = RelatedSpawner<'w, TaskOf<T>>;

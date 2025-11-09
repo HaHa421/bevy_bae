@@ -1,4 +1,4 @@
-use bevy::{prelude::*, time::TimeUpdateStrategy};
+use bevy::{log::LogPlugin, prelude::*, time::TimeUpdateStrategy};
 use bevy_bae::{plan::Plan, prelude::*};
 
 #[test]
@@ -9,7 +9,7 @@ fn single_operator() {
 #[test]
 fn single_sequence() {
     assert_plan(
-        || (Name::new("a"), tasks!(Sequence[operator("a")])),
+        || (Name::new("root"), tasks!(Sequence[operator("a")])),
         vec!["a"],
     );
 }
@@ -17,7 +17,7 @@ fn single_sequence() {
 #[test]
 fn single_select() {
     assert_plan(
-        || (Name::new("a"), tasks!(Select[operator("a")])),
+        || (Name::new("root"), tasks!(Select[operator("a")])),
         vec!["a"],
     );
 }
@@ -28,7 +28,7 @@ where
     U: Bundle,
 {
     let mut app = App::new();
-    app.add_plugins((MinimalPlugins, BaePlugin::default()))
+    app.add_plugins((MinimalPlugins, LogPlugin::default(), BaePlugin::default()))
         .insert_resource(TimeUpdateStrategy::ManualDuration(
             Time::<Fixed>::default().timestep(),
         ))

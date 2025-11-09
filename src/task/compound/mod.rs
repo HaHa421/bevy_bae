@@ -60,15 +60,6 @@ pub enum DecomposeResult {
     Failure,
 }
 
-impl TypeErasedCompoundTask {
-    fn tasks_typed<'a, C: CompoundTask>(
-        &self,
-        context: &'a FilteredEntityRef,
-    ) -> Option<&'a [Entity]> {
-        context.get::<Tasks<C>>().map(|actions| &***actions)
-    }
-}
-
 pub trait CompoundAppExt {
     fn add_compound_task<C: CompoundTask>(&mut self) -> &mut Self;
 }
