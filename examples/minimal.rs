@@ -1,89 +1,33 @@
-use bevy::{color::palettes::tailwind, picking::pointer::PointerInteraction, prelude::*};
+use bevy::prelude::*;
 use bevy_bae::prelude::*;
 
 fn main() {
     App::new()
         .add_plugins((DefaultPlugins, MeshPickingPlugin, BaePlugin::default()))
         .add_systems(Startup, setup)
-        .add_systems(
-            FixedUpdate,
-            update_close_to_cursor.before(BaeSystems::RunTaskSystems),
-        )
         .run();
 }
 
-fn setup(
-    mut commands: Commands,
-    mut meshes: ResMut<Assets<Mesh>>,
-    mut materials: ResMut<Assets<ColorMaterial>>,
-) {
-    commands.spawn(Camera2d);
+fn setup(mut commands: Commands) {
     commands.spawn((
-        Name::new("Background"),
-        Mesh2d(meshes.add(Rectangle::new(10000.0, 10000.0))),
-        MeshMaterial2d(materials.add(Color::from(tailwind::GRAY_200))),
-        Transform::from_xyz(0.0, 0.0, -1.0),
-    ));
-    commands.spawn((
-        Name::new("NPC"),
-        Mesh2d(meshes.add(Triangle2d::new(
-            Vec2::Y * 20.0,
-            Vec2::new(-20.0, -20.0),
-            Vec2::new(20.0, -20.0),
-        ))),
-        MeshMaterial2d(materials.add(Color::from(tailwind::ROSE_500))),
         Plan::new(),
-        Select,
-        tasks![
-            (
-                conditions![Condition::eq("close_to_cursor", true)],
-                Operator::new(rotate),
-            ),
-            Operator::new(follow_cursor),
-        ],
+        Sequence,
+        tasks![Operator::new(greet), Operator::new(idle),],
     ));
 }
 
-fn rotate(In(input): In<OperatorInput>, mut transforms: Query<&mut Transform>) -> TaskStatus {
-    let mut npc_transform = transforms.get_mut(input.planner).unwrap();
-    npc_transform.rotate_z(0.1);
-    TaskStatus::Continue
+fn greet(_: In<OperatorInput>) -> TaskStatus {
+    info!("Oh hai!!! I greet you every second. Very polite, eh?");
+    TaskStatus::Success
 }
 
-fn follow_cursor(
-    In(input): In<OperatorInput>,
-    pointers: Query<&PointerInteraction>,
-    mut transforms: Query<&mut Transform>,
-) -> TaskStatus {
-    let mut npc_transform = transforms.get_mut(input.planner).unwrap();
-    for point in pointers
-        .iter()
-        .filter_map(|interaction| interaction.get_nearest_hit())
-        .filter_map(|(_entity, hit)| hit.position)
-    {
-        let dir = (point - npc_transform.translation).normalize();
-        npc_transform.align(Vec3::NEG_Z, Vec3::NEG_Z, Vec3::Y, dir);
-        npc_transform.translation += dir * 2.5;
-    }
-    TaskStatus::Continue
-}
-
-fn update_close_to_cursor(
-    pointers: Query<&PointerInteraction>,
-    npc: Single<(Entity, &Transform, &mut Props), With<Plan>>,
-    mut commands: Commands,
-) {
-    let (npc, npc_transform, mut props) = npc.into_inner();
-    for point in pointers
-        .iter()
-        .filter_map(|interaction| interaction.get_nearest_hit())
-        .filter_map(|(_entity, hit)| hit.position)
-    {
-        let was_close = *props.get::<bool>("close_to_cursor");
-        let is_close = point.distance_squared(npc_transform.translation) < 10.0 * 10.0;
-        if was_close != is_close {
-            props.set("close_to_cursor", is_close);
-            commands.entity(npc).trigger(UpdatePlan::new);
-        }
+fn idle(_: In<OperatorInput>, time: Res<Time>, mut timer: Local<Option<Timer>>) -> TaskStatus {
+    let timer = timer.get_or_insert_with(|| Timer::from_seconds(1.0, TimerMode::Once));
+    timer.tick(time.delta());
+    if timer.is_finished() {
+        timer.reset();
+        TaskStatus::Success
+    } else {
+        TaskStatus::Continue
     }
 }
