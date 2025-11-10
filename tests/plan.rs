@@ -8,13 +8,34 @@ fn behavior_operator() {
 }
 
 #[test]
+#[should_panic]
+fn behavior_empty() {
+    assert_plan((), vec![]);
+}
+
+#[test]
 fn sequence_single() {
     assert_plan(tasks!(Sequence[op("a")]), vec!["a"]);
 }
 
 #[test]
+fn sequence_single_fail() {
+    assert_plan(tasks!(Sequence[(cond(false), op("a"))]), vec![]);
+}
+
+#[test]
 fn sequence_multi() {
     assert_plan(tasks!(Sequence[op("a"), op("b")]), vec!["a", "b"]);
+}
+
+#[test]
+fn sequence_multi_fail() {
+    assert_plan(tasks!(Sequence[op("a"), (cond(false), op("b"))]), vec![]);
+}
+
+#[test]
+fn sequence_empty() {
+    assert_plan(tasks!(Sequence[]), vec![]);
 }
 
 #[test]
@@ -51,6 +72,17 @@ fn sequence_nested_3() {
 }
 
 #[test]
+fn sequence_nested_fail() {
+    assert_plan(
+        tasks!(Sequence[
+            tasks!(Sequence[op("a"), (cond(false), op("b"))]),
+            tasks!(Sequence[op("c"), op("d")]),
+        ]),
+        vec![],
+    );
+}
+
+#[test]
 fn select_single() {
     assert_plan(tasks!(Select[op("a")]), vec!["a"]);
 }
@@ -58,6 +90,11 @@ fn select_single() {
 #[test]
 fn select_first() {
     assert_plan(tasks!(Select[op("a"), op("b")]), vec!["a"]);
+}
+
+#[test]
+fn select_empty() {
+    assert_plan(tasks!(Select[]), vec![]);
 }
 
 #[test]
@@ -105,6 +142,40 @@ fn select_second_conditional() {
     );
 }
 
+#[test]
+fn select_nested() {
+    assert_plan(
+        tasks!(Select[
+            (
+                cond(false),
+                op("a")
+            ),
+            tasks!(Select[
+                (cond(false), op("b")),
+                op("c")
+            ]),
+        ]),
+        vec!["c"],
+    );
+}
+
+#[test]
+fn sequence_and_select() {
+    assert_plan(
+        tasks!(Select[
+            tasks!(Sequence[op("a"), (cond(false), op("b"))]),
+            tasks!(Select[
+                (cond(false),op("c")),
+                tasks!(Sequence[
+                    op("d"),
+                    op("e")
+                ])]),
+        ]),
+        vec!["d", "e"],
+    );
+}
+
+#[track_caller]
 fn assert_plan(behavior: impl Bundle, plan: Vec<&'static str>) {
     let mut app = App::new();
     let behavior = Mutex::new(Some(behavior));

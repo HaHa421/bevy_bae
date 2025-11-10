@@ -1,4 +1,6 @@
+use bevy_ecs::error::ErrorContext;
 use bevy_mod_props::PropsExt;
+use bevy_utils::prelude::DebugName;
 
 use crate::prelude::*;
 use crate::task::compound::{DecomposeInput, DecomposeResult, TypeErasedCompoundTask};
@@ -10,7 +12,7 @@ struct UpdatePlan {
     entity: Entity,
 }
 
-#[derive(Component, Clone, PartialEq, Eq, Reflect, Debug)]
+#[derive(Component, Clone, Default, PartialEq, Eq, Reflect, Debug)]
 #[reflect(Component)]
 pub struct Plan(#[reflect(ignore)] pub Vec<OperatorId>);
 
@@ -19,10 +21,22 @@ pub struct UpdatePlanCommand;
 impl EntityCommand for UpdatePlanCommand {
     fn apply(self, entity_world: EntityWorldMut) {
         let entity = entity_world.id();
-        entity_world
-            .into_world_mut()
-            .run_system_cached_with(update_plan, UpdatePlan { entity })
-            .unwrap()
+        let world = entity_world.into_world_mut();
+        let error_handler = world.default_error_handler();
+        let result: Result<(), _> =
+            world.run_system_cached_with(update_plan, UpdatePlan { entity });
+        match result {
+            Ok(_) => (),
+            Err(bevy_ecs::system::RegisteredSystemError::Failed(err)) => (error_handler)(
+                err,
+                ErrorContext::Command {
+                    name: DebugName::from("UpdatePlanCommand"),
+                },
+            ),
+            Err(err) => {
+                panic!("Unexpected error while calling `update_plan`: {err}")
+            }
+        }
     }
 }
 
@@ -63,6 +77,7 @@ fn update_plan(
             debug!("behavior {behav_name} -> condition {name}: {is_fulfilled}");
             if !is_fulfilled {
                 debug!("behavior {behav_name}: aborting update due to unfulfilled condition");
+                world.entity_mut(root).insert(Plan::default());
                 return Ok(());
             }
         }
@@ -72,8 +87,9 @@ fn update_plan(
         .get(world, root)
         .map(|(o, t)| (o.cloned(), t.cloned()))
     else {
+        world.entity_mut(root).insert(Plan::default());
         return Err(BevyError::from(format!(
-            "{behav_name}: Called `UpdatePlan` for an entity without any tasks. Ensure it has either an `Operator` or a `CompoundTask` like `Select` or `Sequence`"
+            "{behav_name}: Called `update_plan` for an entity without any tasks. Ensure it has either an `Operator` or a `CompoundTask` like `Select` or `Sequence`"
         )));
     };
     let plan = if let Some(operator) = operator {
@@ -91,9 +107,7 @@ fn update_plan(
         let result = world.run_system_with(compound_task.decompose, ctx)?;
         match result {
             DecomposeResult::Success { plan, .. } => plan,
-            DecomposeResult::Failure => {
-                todo!();
-            }
+            DecomposeResult::Failure => Vec::new(),
             DecomposeResult::Rejection => todo!(),
         }
     } else {

@@ -60,6 +60,7 @@ fn decompose_sequence(
             },
         )
         .collect();
+    let mut found_anything = false;
     for (task_entity, task_name, operator, compound_task, condition_relations, effect_relations) in
         individual_tasks
     {
@@ -78,7 +79,6 @@ fn decompose_sequence(
                     debug!(
                         "sequence {seq_name} -> task {task_name} -> condition {name}: aborting update due to unfulfilled condition"
                     );
-                    // todo: can we instead just skip this?
                     return DecomposeResult::Failure;
                 }
             }
@@ -101,7 +101,7 @@ fn decompose_sequence(
                     ctx.plan = plan;
                     ctx.world_state = world_state;
                 }
-                Ok(DecomposeResult::Failure) => todo!(),
+                Ok(DecomposeResult::Failure) => return DecomposeResult::Failure,
                 Ok(DecomposeResult::Rejection) => todo!(),
                 Err(_) => return DecomposeResult::Failure,
             }
@@ -118,11 +118,16 @@ fn decompose_sequence(
                 effect.apply(&mut ctx.world_state)
             }
         }
+        found_anything = true
     }
 
     debug!("sequence {seq_name}: done");
-    DecomposeResult::Success {
-        plan: ctx.plan,
-        world_state: ctx.world_state,
+    if found_anything {
+        DecomposeResult::Success {
+            plan: ctx.plan,
+            world_state: ctx.world_state,
+        }
+    } else {
+        DecomposeResult::Failure
     }
 }
