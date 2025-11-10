@@ -10,43 +10,31 @@ fn trunk_thumper_domain() -> impl Bundle {
         Name::new("Be Trunk Thumper"),
         tasks!(Select[
             (
-                Name::new("Beat up enemy"),
-                conditions![(
-                    Name::new("Can see enemy"),
-                    Condition::eq("can_see_enemy", true),
-                )],
+                Name::new("Fight enemy"),
                 tasks!(Sequence[
                     (
-                        Name::new("Navigate to enemy"),
+                        conditions![
+                            Condition::eq("can_see_enemy", true),
+                        ],
+                        Operator::new(navigate_to_enemy),
                         effects![(
-                            Name::new("Set location to enemy position"),
                             Effect::set("location", "enemy"),
                         )],
-                        Operator::new(navigate_to_enemy),
                     ),
-                    (Name::new("Do trunk slam"), Operator::new(do_trunk_slam)),
+                    Operator::new(do_trunk_slam),
                 ]),
             ),
             (
                 Name::new("Patrol bridges"),
-                conditions![(Name::new("Always true"), Condition::always_true())],
                 tasks!(Sequence[
+                    Operator::new(choose_bridge_to_check),
                     (
-                        Name::new("Choose best bridge to check for enemies"),
-                        Operator::new(choose_bridge_to_check),
-                    ),
-                    (
-                        Name::new("Go to bridge"),
-                        effects![(
-                            Name::new("Set location to bridge"),
-                            Effect::set("location", "bridge"),
-                        )],
                         Operator::new(navigate_to_bridge),
+                        effects![
+                            Effect::set("location", "bridge"),
+                        ],
                     ),
-                    (
-                        Name::new("Check if anything is out of the ordinary"),
-                        Operator::new(check_bridge),
-                    ),
+                    Operator::new(check_bridge),
                 ]),
             )
         ]),
