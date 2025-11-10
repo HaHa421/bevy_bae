@@ -13,6 +13,14 @@ pub struct Effect {
     pub plan_only: bool,
 }
 
+impl PartialEq for Effect {
+    fn eq(&self, other: &Self) -> bool {
+        Arc::ptr_eq(&self.effect, &other.effect) && self.plan_only == other.plan_only
+    }
+}
+
+impl Eq for Effect {}
+
 impl Effect {
     pub fn new(predicate: impl Fn(&mut Props) + Send + Sync + 'static) -> Self {
         Self {

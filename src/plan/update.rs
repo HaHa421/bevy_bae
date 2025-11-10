@@ -92,6 +92,7 @@ fn update_plan_inner(
             }]
             .into(),
             mtr: Mtr::default(),
+            full_entities: Vec::new(),
         }
     } else if let Some(compound_task) = task {
         debug!("behavior {behav_name}: compound task");
@@ -110,7 +111,22 @@ fn update_plan_inner(
         };
         let result = world.run_system_with(compound_task.decompose, ctx)?;
         match result {
-            DecomposeResult::Success { plan, .. } => plan,
+            DecomposeResult::Success { plan, .. } => {
+                if previous_mtr == plan.mtr
+                    && world.entity(root).get::<Plan>().is_some_and(|prev_plan| {
+                        prev_plan.full_entities.len() == plan.operators.len()
+                            && prev_plan
+                                .full_entities
+                                .iter()
+                                .zip(plan.operators.iter())
+                                .all(|(a, b)| *a == b.entity)
+                    })
+                {
+                    // We found the same plan we are already running. Just keep that one.
+                    return Ok(());
+                }
+                plan
+            }
             DecomposeResult::Failure => Plan::default(),
             DecomposeResult::Rejection => return Ok(()),
         }
@@ -133,6 +149,13 @@ fn update_plan_inner(
         }
     }
     debug!("behavior {behav_name}: finished with {plan:?}");
+
+    let op_entities = plan
+        .operators
+        .iter()
+        .map(|op| op.entity)
+        .collect::<Vec<_>>();
+    plan.full_entities = op_entities;
 
     world.entity_mut(root).insert(plan);
     Ok(())

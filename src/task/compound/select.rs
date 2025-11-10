@@ -139,6 +139,7 @@ fn decompose_select(
             }
         }
         // only use the first match
+        ctx.mtr.push(i as u16);
         found_anything = true;
         break;
     }

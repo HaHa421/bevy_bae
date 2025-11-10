@@ -60,7 +60,7 @@ pub(crate) fn execute_plan(
             Ok(TaskStatus::Failure)
         };
 
-        match result {
+        let force_replan = match result {
             Ok(TaskStatus::Success) => {
                 debug!("{name}: Plan step completed successfully, moving to next step");
                 let step = world
@@ -80,24 +80,30 @@ pub(crate) fn execute_plan(
                         effect.apply(&mut props);
                     }
                 }
+
+                false
             }
             Ok(TaskStatus::Continue) => {
                 debug!("{name}: Plan step ongoing.");
+                // Even if the current plan is empty, we still want to continue the execution of the last step!
+                continue;
             }
             Ok(TaskStatus::Failure) => {
                 debug!("{name}: Plan step failed, aborting plan");
-                world.entity_mut(entity).insert(Plan::default());
+                true
             }
             Err(err) => {
                 error!("{name}: failed to execute current plan step: {err}. Aborting plan");
-                world.entity_mut(entity).insert(Plan::default());
+                true
             }
-        }
-        if world
-            .entity(entity)
-            .get::<Plan>()
-            .is_none_or(|plan| plan.is_empty())
+        };
+        if force_replan
+            || world
+                .entity(entity)
+                .get::<Plan>()
+                .is_none_or(|plan| plan.is_empty())
         {
+            world.entity_mut(entity).insert(Plan::default());
             debug!("{name}: Plan is empty, triggering replan.");
             world.entity_mut(entity).trigger(UpdatePlan::new);
         }

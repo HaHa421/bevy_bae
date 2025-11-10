@@ -7,16 +7,17 @@ pub mod execution;
 pub mod mtr;
 pub mod update;
 
-#[derive(Component, Clone, Default, Reflect, Debug, Deref, DerefMut)]
+#[derive(Component, Clone, Default, PartialEq, Eq, Reflect, Debug, Deref, DerefMut)]
 #[reflect(Component)]
 pub struct Plan {
     #[reflect(ignore)]
     #[deref]
     pub operators: VecDeque<PlannedOperator>,
+    pub full_entities: Vec<Entity>,
     pub mtr: Mtr,
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct PlannedOperator {
     pub system: OperatorId,
     pub entity: Entity,

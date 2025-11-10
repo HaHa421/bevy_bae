@@ -15,6 +15,13 @@ pub struct Condition {
     predicate: Arc<dyn Fn(&mut Props) -> bool + Send + Sync + 'static>,
 }
 
+impl PartialEq for Condition {
+    fn eq(&self, other: &Self) -> bool {
+        Arc::ptr_eq(&self.predicate, &other.predicate)
+    }
+}
+impl Eq for Condition {}
+
 impl Condition {
     pub fn new(predicate: impl Fn(&mut Props) -> bool + Send + Sync + 'static) -> Self {
         Self {
