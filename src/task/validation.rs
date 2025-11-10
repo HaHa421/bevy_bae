@@ -37,7 +37,7 @@ pub(crate) fn remove_bae_task_present_on_remove<T: Component>(
 pub(crate) fn assert_conditions_and_effects_are_not_on_compounds(
     invalids: Query<(NameOrEntity, AnyOf<(&Conditions, &Effects)>), With<TypeErasedCompoundTask>>,
 ) {
-    for (name, (conditions, effects)) in invalids.iter() {
+    if let Some((name, (conditions, effects))) = invalids.iter().next() {
         let name = name
             .name
             .map(|_| format!("{id} ({name})", id = name.entity))

@@ -30,7 +30,7 @@ pub(crate) fn execute_plan(
                 .flat_map(|c| {
                     conditions
                         .iter_many(world, c.iter())
-                        .map(|c| c.clone())
+                        .cloned()
                         .collect::<Vec<_>>()
                 })
                 .collect::<Vec<_>>()

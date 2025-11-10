@@ -1,6 +1,6 @@
+use alloc::sync::Arc;
 use core::fmt::Debug;
 use core::ops::RangeBounds;
-use std::sync::Arc;
 
 use ustr::Ustr;
 
