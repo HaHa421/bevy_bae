@@ -17,9 +17,9 @@ fn trunk_thumper_domain() -> impl Bundle {
                             Condition::eq("can_see_enemy", true),
                         ],
                         Operator::new(navigate_to_enemy),
-                        effects![(
+                        effects![
                             Effect::set("location", "enemy"),
-                        )],
+                        ],
                     ),
                     Operator::new(do_trunk_slam),
                 ]),
