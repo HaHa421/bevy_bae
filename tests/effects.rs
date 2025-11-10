@@ -115,11 +115,11 @@ fn assert_effects(behavior: impl Bundle, props: Vec<Vec<(&'static str, Value)>>)
     .insert_resource(TimeUpdateStrategy::ManualDuration(
         Time::<Fixed>::default().timestep(),
     ))
-    .add_systems(PreUpdate, move |mut commands: Commands| {
+    .add_systems(Startup, move |mut commands: Commands| {
         commands
             .spawn(behavior.lock().unwrap().take().unwrap())
             .insert_if_new(Name::new("root"))
-            .update_plan();
+            .trigger(UpdatePlan::new);
     });
     app.finish();
     app.update();

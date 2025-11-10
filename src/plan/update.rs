@@ -1,4 +1,5 @@
-use bevy_ecs::error::ErrorContext;
+use bevy_ecs::error::{DefaultErrorHandler, ErrorContext, HandleError as _};
+use bevy_ecs::system::command::run_system_cached_with;
 use bevy_mod_props::PropsExt;
 
 use crate::plan::PlannedOperator;
@@ -6,46 +7,37 @@ use crate::prelude::*;
 use crate::task::compound::{DecomposeInput, DecomposeResult, TypeErasedCompoundTask};
 
 #[derive(EntityEvent)]
-struct UpdatePlan {
+pub struct UpdatePlan {
     #[event_target]
     entity: Entity,
 }
 
-pub struct UpdatePlanCommand;
-
-impl EntityCommand for UpdatePlanCommand {
-    fn apply(self, entity_world: EntityWorldMut) {
-        let entity = entity_world.id();
-        let world = entity_world.into_world_mut();
-        let error_handler = world.default_error_handler();
-        let result: Result<(), _> =
-            world.run_system_cached_with(update_plan, UpdatePlan { entity });
-        match result {
-            Ok(_) => (),
-            Err(bevy_ecs::system::RegisteredSystemError::Failed(err)) => (error_handler)(
-                err,
-                ErrorContext::Command {
-                    name: DebugName::from("UpdatePlanCommand"),
-                },
-            ),
-            Err(err) => {
-                panic!("Unexpected error while calling `update_plan`: {err}")
-            }
-        }
+impl From<Entity> for UpdatePlan {
+    fn from(entity: Entity) -> Self {
+        Self { entity }
     }
 }
 
-pub trait UpdatePlanCommands {
-    fn update_plan(&mut self) -> &mut Self;
-}
-
-impl<'a> UpdatePlanCommands for EntityCommands<'a> {
-    fn update_plan(&mut self) -> &mut Self {
-        self.queue(UpdatePlanCommand)
+impl UpdatePlan {
+    pub fn new(entity: Entity) -> Self {
+        Self::from(entity)
     }
 }
 
-fn update_plan(
+pub(crate) fn update_plan(
+    update: On<UpdatePlan>,
+    mut commands: Commands,
+    error_handler: Option<Res<DefaultErrorHandler>>,
+) {
+    let entity = update.entity;
+    let error_handler = error_handler.map(|h| h.clone()).unwrap_or_default();
+    commands.queue(
+        run_system_cached_with(update_plan_inner, UpdatePlan { entity })
+            .handle_error_with(error_handler.0),
+    );
+}
+
+fn update_plan_inner(
     update: In<UpdatePlan>,
     world: &mut World,
     mut conditions: Local<QueryState<(Entity, NameOrEntity, &Condition)>>,
