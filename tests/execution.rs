@@ -1,12 +1,13 @@
 use bevy::{log::LogPlugin, prelude::*, time::TimeUpdateStrategy};
 use bevy_bae::prelude::*;
+use bevy_ecs::entity_disabling::Disabled;
 use std::sync::Mutex;
 
 #[test]
 fn runs_plan() {
     let mut app = App::test(op("a"));
     app.update();
-    app.assert_last_opt(Some("a"));
+    app.assert_last_opt("a");
 }
 
 #[test]
@@ -18,7 +19,7 @@ fn runs_plan_with_condition() {
         ]
     ));
     app.update();
-    app.assert_last_opt(Some("b"));
+    app.assert_last_opt("b");
 }
 
 #[test]
@@ -31,19 +32,43 @@ fn runs_plan_then_replans_with_new_effects() {
     ));
     // plan
     app.update();
-    app.assert_last_opt(Some("a"));
+    app.assert_last_opt("a");
     // replan
     app.update();
-    app.assert_last_opt(Some("b"));
+    app.assert_last_opt("b");
     // replan to same plan
     app.update();
-    app.assert_last_opt(Some("b"));
+    app.assert_last_opt("b");
+}
+
+#[test]
+fn ignores_disabled_behavior() {
+    let mut app = App::test(tasks!(
+        Select[
+            (op("a"), cond_is("use_b", false), eff("use_b", true)),
+            op("b")
+        ]
+    ));
+    // plan
+    app.update();
+    app.assert_last_opt("a");
+
+    // disable behavior
+    app.behavior_entity().insert(Disabled);
+    app.update();
+    app.assert_last_opt(None);
+
+    // enable behavior and replan
+    app.behavior_entity().remove::<Disabled>();
+    app.update();
+    app.assert_last_opt("b");
 }
 
 trait TestApp {
     fn test(behavior: impl Bundle) -> App;
     #[track_caller]
     fn assert_last_opt(&self, name: impl Into<Option<&'static str>>);
+    fn behavior_entity(&mut self) -> EntityWorldMut<'_>;
 }
 
 impl TestApp for App {
@@ -87,6 +112,16 @@ impl TestApp for App {
         let actual = self.world().resource::<LastOpt>().0.clone();
         assert_eq!(actual, name);
     }
+
+    fn behavior_entity(&mut self) -> EntityWorldMut<'_> {
+        let entity = self
+            .world()
+            .try_query_filtered::<Entity, (With<Plan>, Allow<Disabled>)>()
+            .unwrap()
+            .single(self.world())
+            .unwrap();
+        self.world_mut().entity_mut(entity)
+    }
 }
 // The following functions are not reflective of real user code and are here to make the test suite more simple to set up.
 
@@ -104,14 +139,6 @@ fn op(name: &str) -> impl Bundle {
             },
         ),
     )
-}
-
-fn cond(val: bool) -> impl Bundle {
-    conditions![if val {
-        Condition::always_true()
-    } else {
-        Condition::always_false()
-    }]
 }
 
 fn cond_is(name: &str, val: impl Into<Value>) -> impl Bundle {

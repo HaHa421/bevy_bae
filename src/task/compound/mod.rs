@@ -1,7 +1,4 @@
 use bevy_ecs::system::SystemId;
-use core::any::TypeId;
-
-use disqualified::ShortName;
 
 use crate::{
     plan::Plan,
@@ -31,21 +28,13 @@ pub struct DecomposeInput {
 
 #[derive(Component, Clone)]
 pub(crate) struct TypeErasedCompoundTask {
-    pub(crate) entity: Entity,
-    pub(crate) name: ShortName<'static>,
-    pub(crate) type_id: TypeId,
     pub(crate) decompose: DecomposeId,
 }
 
 impl TypeErasedCompoundTask {
     #[must_use]
-    fn new<C: CompoundTask>(entity: Entity, id: DecomposeId) -> Self {
-        Self {
-            entity,
-            name: ShortName::of::<C>(),
-            type_id: TypeId::of::<C>(),
-            decompose: id,
-        }
+    fn new(id: DecomposeId) -> Self {
+        Self { decompose: id }
     }
 }
 
@@ -74,7 +63,7 @@ fn insert_type_erased_task<C: CompoundTask>(insert: On<Insert, Tasks<C>>, mut co
     let system_id = C::register_decompose(&mut commands);
     commands
         .entity(insert.entity)
-        .try_insert(TypeErasedCompoundTask::new::<C>(insert.entity, system_id));
+        .try_insert(TypeErasedCompoundTask::new(system_id));
 }
 fn remove_type_erased_task<C: CompoundTask>(remove: On<Remove, Tasks<C>>, mut commands: Commands) {
     commands
