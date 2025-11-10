@@ -68,7 +68,7 @@ fn decompose_select(
         (task_entity, task_name, operator, compound_task, condition_relations, effect_relations),
     ) in individual_tasks.into_iter().enumerate()
     {
-        let mtr = ctx.mtr.clone().with(i as u16);
+        let mtr = ctx.plan.mtr.clone().with(i as u16);
         if mtr > ctx.previous_mtr {
             debug!(
                 "select {sel_name} -> task {task_name}: current MTR ({mtr:?}) is greater than previous MTR ({previous_mtr:?})",
@@ -109,7 +109,6 @@ fn decompose_select(
                     compound_task: task_entity,
                     world_state: ctx.world_state.clone(),
                     plan: ctx.plan.clone(),
-                    mtr,
                     previous_mtr: ctx.previous_mtr.clone(),
                 },
             ) {
@@ -139,7 +138,7 @@ fn decompose_select(
             }
         }
         // only use the first match
-        ctx.mtr.push(i as u16);
+        ctx.plan.mtr.push(i as u16);
         found_anything = true;
         break;
     }

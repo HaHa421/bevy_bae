@@ -107,7 +107,6 @@ fn update_plan_inner(
             root,
             compound_task: root,
             previous_mtr: previous_mtr.clone(),
-            mtr: previous_mtr.clone(),
         };
         let result = world.run_system_with(compound_task.decompose, ctx)?;
         match result {
@@ -125,6 +124,8 @@ fn update_plan_inner(
                     // We found the same plan we are already running. Just keep that one.
                     return Ok(());
                 }
+                error!("prev mtr: {:?}", previous_mtr);
+                error!("current mtr: {:?}", plan.mtr);
                 plan
             }
             DecomposeResult::Failure => Plan::default(),

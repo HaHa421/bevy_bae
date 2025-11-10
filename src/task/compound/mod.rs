@@ -24,7 +24,6 @@ pub struct DecomposeInput {
     pub compound_task: Entity,
     pub world_state: Props,
     pub plan: Plan,
-    pub mtr: Mtr,
     pub previous_mtr: Mtr,
 }
 

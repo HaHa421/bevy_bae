@@ -100,7 +100,6 @@ fn decompose_sequence(
                     compound_task: task_entity,
                     world_state: ctx.world_state.clone(),
                     plan: ctx.plan.clone(),
-                    mtr: ctx.mtr.clone(),
                     previous_mtr: ctx.previous_mtr.clone(),
                 },
             ) {

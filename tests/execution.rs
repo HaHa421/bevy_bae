@@ -142,6 +142,7 @@ fn replan_keeps_higher_priority() {
 
     app.behavior_entity().trigger(UpdatePlan::new);
 
+    // Even though our current sequence is no longer valid, we need to finish it before switching away due to a replan.
     app.update();
     app.assert_last_opt("b");
 
