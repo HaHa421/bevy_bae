@@ -252,7 +252,7 @@ fn assert_plan(behavior: impl Bundle, plan: Vec<&'static str>) {
 
     let mut operators = app.world().try_query::<(&Operator, &Name)>().unwrap();
     let actual_plan_names = actual_plan
-        .0
+        .operators
         .into_iter()
         .map(|planned_op| {
             operators

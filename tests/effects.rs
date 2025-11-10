@@ -132,7 +132,7 @@ fn assert_effects(behavior: impl Bundle, props: Vec<Vec<(&'static str, Value)>>)
         .clone();
 
     let actual_props = actual_plan
-        .0
+        .operators
         .into_iter()
         .map(|planned_op| {
             planned_op

@@ -1,14 +1,20 @@
 use alloc::collections::VecDeque;
 use bevy_derive::DerefMut;
 
-use crate::{prelude::*, task::primitive::OperatorId};
+use crate::{plan::mtr::Mtr, prelude::*, task::primitive::OperatorId};
 
 pub mod execution;
+pub mod mtr;
 pub mod update;
 
 #[derive(Component, Clone, Default, Reflect, Debug, Deref, DerefMut)]
 #[reflect(Component)]
-pub struct Plan(#[reflect(ignore)] pub VecDeque<PlannedOperator>);
+pub struct Plan {
+    #[reflect(ignore)]
+    #[deref]
+    pub operators: VecDeque<PlannedOperator>,
+    pub mtr: Mtr,
+}
 
 #[derive(Clone, Debug)]
 pub struct PlannedOperator {

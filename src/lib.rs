@@ -1,6 +1,7 @@
 pub mod prelude {
     pub use crate::{
         BaePlugin, BaeSystems,
+        bevy_mod_props::{self, Props, Value},
         condition::{
             Condition,
             relationship::{
@@ -23,18 +24,17 @@ pub mod prelude {
             primitive::{Operator, OperatorInput},
         },
     };
-    pub use bevy_mod_props::{self, Props, Value};
     pub(crate) use {
         bevy_app::prelude::*,
-        bevy_derive::Deref,
+        bevy_derive::{Deref, DerefMut},
         bevy_ecs::prelude::*,
         bevy_reflect::prelude::*,
         log::{debug, error},
     };
 }
 extern crate alloc;
-
 use bevy_ecs::{intern::Interned, schedule::ScheduleLabel};
+pub use bevy_mod_props;
 
 use crate::{
     plan::{execution::execute_plan, update::update_plan},

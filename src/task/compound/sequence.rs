@@ -62,9 +62,19 @@ fn decompose_sequence(
         )
         .collect();
     let mut found_anything = false;
-    for (task_entity, task_name, operator, compound_task, condition_relations, effect_relations) in
-        individual_tasks
+    for (
+        i,
+        (task_entity, task_name, operator, compound_task, condition_relations, effect_relations),
+    ) in individual_tasks.into_iter().enumerate()
     {
+        let mtr = ctx.mtr.clone().with(i as u16);
+        if mtr > ctx.previous_mtr {
+            debug!(
+                "sequence {seq_name} -> task {task_name}: current MTR ({mtr:?}) is greater than previous MTR ({previous_mtr:?})",
+                previous_mtr = ctx.previous_mtr
+            );
+            return DecomposeResult::Rejection;
+        }
         if let Some(condition_relations) = condition_relations {
             for (entity, name, condition) in conditions.iter_many(world, condition_relations.iter())
             {
@@ -100,6 +110,8 @@ fn decompose_sequence(
                     compound_task: task_entity,
                     world_state: ctx.world_state.clone(),
                     plan: ctx.plan.clone(),
+                    mtr,
+                    previous_mtr: ctx.previous_mtr.clone(),
                 },
             ) {
                 Ok(DecomposeResult::Success { plan, world_state }) => {
@@ -107,7 +119,7 @@ fn decompose_sequence(
                     ctx.world_state = world_state;
                 }
                 Ok(DecomposeResult::Failure) => return DecomposeResult::Failure,
-                Ok(DecomposeResult::Rejection) => todo!(),
+                Ok(DecomposeResult::Rejection) => return DecomposeResult::Rejection,
                 Err(_) => return DecomposeResult::Failure,
             }
         } else {

@@ -3,6 +3,7 @@ use bevy_ecs::system::command::run_system_cached_with;
 use bevy_mod_props::PropsExt;
 
 use crate::plan::PlannedOperator;
+use crate::plan::mtr::Mtr;
 use crate::prelude::*;
 use crate::task::compound::{DecomposeInput, DecomposeResult, TypeErasedCompoundTask};
 
@@ -83,27 +84,35 @@ fn update_plan_inner(
     let mut plan = if let Some(operator) = operator {
         // well that was easy: this root has just a single operator
         debug!("behavior {behav_name}: operator");
-        Plan(
-            [PlannedOperator {
+        Plan {
+            operators: [PlannedOperator {
                 system: operator.system_id(),
                 entity: root,
                 effects: vec![],
             }]
             .into(),
-        )
+            mtr: Mtr::default(),
+        }
     } else if let Some(compound_task) = task {
         debug!("behavior {behav_name}: compound task");
+        let previous_mtr = if let Some(plan) = world.entity(root).get::<Plan>() {
+            plan.mtr.clone()
+        } else {
+            Mtr::none()
+        };
         let ctx = DecomposeInput {
             world_state,
             plan: Plan::default(),
             root,
             compound_task: root,
+            previous_mtr: previous_mtr.clone(),
+            mtr: previous_mtr.clone(),
         };
         let result = world.run_system_with(compound_task.decompose, ctx)?;
         match result {
             DecomposeResult::Success { plan, .. } => plan,
             DecomposeResult::Failure => Plan::default(),
-            DecomposeResult::Rejection => todo!(),
+            DecomposeResult::Rejection => return Ok(()),
         }
     } else {
         unreachable!(

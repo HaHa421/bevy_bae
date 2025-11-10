@@ -1,7 +1,7 @@
 use bevy_ecs::system::SystemId;
 
 use crate::{
-    plan::Plan,
+    plan::{Plan, mtr::Mtr},
     prelude::*,
     task::validation::{
         BaeTaskPresent, insert_bae_task_present_on_add, remove_bae_task_present_on_remove,
@@ -24,6 +24,8 @@ pub struct DecomposeInput {
     pub compound_task: Entity,
     pub world_state: Props,
     pub plan: Plan,
+    pub mtr: Mtr,
+    pub previous_mtr: Mtr,
 }
 
 #[derive(Component, Clone)]

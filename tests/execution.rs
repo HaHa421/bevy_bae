@@ -107,6 +107,79 @@ fn ignores_disabled_behavior() {
     app.assert_last_opt("b");
 }
 
+#[test]
+fn replan_keeps_self() {
+    let mut app = App::test(tasks!(
+        Sequence[
+            op("a"),
+            op("b")
+        ]
+    ));
+    app.update();
+    app.assert_last_opt("a");
+
+    app.behavior_entity().trigger(UpdatePlan::new);
+
+    app.update();
+    app.assert_last_opt("b");
+}
+
+#[test]
+fn replan_keeps_higher_priority() {
+    let mut app = App::test(tasks!(
+        Select[
+            tasks!(Sequence[
+                (op("a"), cond_is("disabled", false), eff("disabled", true)),
+                op("b")
+            ]),
+            tasks!(Sequence[
+                op("c"),
+                op("d")
+            ])]
+    ));
+    app.update();
+    app.assert_last_opt("a");
+
+    app.behavior_entity().trigger(UpdatePlan::new);
+
+    app.update();
+    app.assert_last_opt("b");
+
+    app.update();
+    app.assert_last_opt("c");
+
+    app.update();
+    app.assert_last_opt("d");
+}
+
+#[test]
+fn replan_switches_to_higher_priority() {
+    let mut app = App::test(tasks!(
+        Select[
+            tasks!(Sequence[
+                (op("a"), cond_is("enabled", true)),
+                op("b")
+            ]),
+            tasks!(Sequence[
+                (op("c"), eff("enabled", true)),
+                op("d")
+            ])]
+    ));
+    app.update();
+    app.assert_last_opt("c");
+
+    app.behavior_entity().trigger(UpdatePlan::new);
+
+    app.update();
+    app.assert_last_opt("a");
+
+    app.update();
+    app.assert_last_opt("b");
+
+    app.update();
+    app.assert_last_opt("a");
+}
+
 trait TestApp {
     fn test(behavior: impl Bundle) -> App;
     #[track_caller]
