@@ -65,24 +65,11 @@ mod tests {
             .add_plugins((MinimalPlugins, BaePlugin::default()))
             .add_systems(Startup, |mut commands: Commands| {
                 commands.spawn((
-                    Tasks::<Select>::default(),
+                    Tasks::default(),
                     Operator::new(|_: In<OperatorInput>| TaskStatus::Success),
                 ));
             })
             .update();
-    }
-
-    #[test]
-    #[should_panic]
-    fn panics_on_compound_and_compound() {
-        let mut app = App::new();
-        app.add_plugins((MinimalPlugins, BaePlugin::default()))
-            .add_systems(Startup, |mut commands: Commands| {
-                commands.spawn((Tasks::<Select>::default(), Tasks::<Sequence>::default()));
-            });
-        app.finish();
-        app.update();
-        app.update();
     }
 
     #[test]
@@ -100,7 +87,7 @@ mod tests {
         App::new()
             .add_plugins((MinimalPlugins, BaePlugin::default()))
             .add_systems(Startup, |mut commands: Commands| {
-                commands.spawn(Tasks::<Select>::default());
+                commands.spawn(Tasks::default());
             })
             .update();
     }

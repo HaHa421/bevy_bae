@@ -4,7 +4,8 @@ use crate::{
     task::compound::{DecomposeId, DecomposeInput, DecomposeResult, TypeErasedCompoundTask},
 };
 
-#[derive(Debug, Default, Reflect)]
+#[derive(Debug, Component, Default, Reflect)]
+#[reflect(Component)]
 pub struct Select;
 
 impl CompoundTask for Select {
@@ -16,7 +17,7 @@ impl CompoundTask for Select {
 fn decompose_select(
     In(mut ctx): In<DecomposeInput>,
     world: &mut World,
-    mut task_relations: Local<QueryState<(NameOrEntity, &Tasks<Select>)>>,
+    mut task_relations: Local<QueryState<(NameOrEntity, &Tasks)>>,
     mut individual_tasks: Local<
         QueryState<(
             Entity,

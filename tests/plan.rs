@@ -15,36 +15,36 @@ fn behavior_empty() {
 
 #[test]
 fn sequence_single() {
-    assert_plan(tasks!(Sequence[op("a")]), vec!["a"]);
+    assert_plan((Sequence, tasks![op("a")]), vec!["a"]);
 }
 
 #[test]
 fn sequence_single_fail() {
-    assert_plan(tasks!(Sequence[(cond(false), op("a"))]), vec![]);
+    assert_plan((Sequence, tasks![(cond(false), op("a"))]), vec![]);
 }
 
 #[test]
 fn sequence_multi() {
-    assert_plan(tasks!(Sequence[op("a"), op("b")]), vec!["a", "b"]);
+    assert_plan((Sequence, tasks![op("a"), op("b")]), vec!["a", "b"]);
 }
 
 #[test]
 fn sequence_multi_fail() {
-    assert_plan(tasks!(Sequence[op("a"), (cond(false), op("b"))]), vec![]);
+    assert_plan((Sequence, tasks![op("a"), (cond(false), op("b"))]), vec![]);
 }
 
 #[test]
 fn sequence_empty() {
-    assert_plan(tasks!(Sequence[]), vec![]);
+    assert_plan((Sequence, tasks![]), vec![]);
 }
 
 #[test]
 fn sequence_nested_1() {
     assert_plan(
-        tasks!(Sequence[
-            tasks!(Sequence[op("a"), op("b")]),
-            op("c")
-        ]),
+        (
+            Sequence,
+            tasks![(Sequence, tasks![op("a"), op("b")]), op("c")],
+        ),
         vec!["a", "b", "c"],
     );
 }
@@ -52,10 +52,10 @@ fn sequence_nested_1() {
 #[test]
 fn sequence_nested_2() {
     assert_plan(
-        tasks!(Sequence[
-            op("a"),
-            tasks!(Sequence[op("b"), op("c")]),
-        ]),
+        (
+            Sequence,
+            tasks![op("a"), (Sequence, tasks![op("b"), op("c")]),],
+        ),
         vec!["a", "b", "c"],
     );
 }
@@ -63,10 +63,13 @@ fn sequence_nested_2() {
 #[test]
 fn sequence_nested_3() {
     assert_plan(
-        tasks!(Sequence[
-            tasks!(Sequence[op("a"), op("b")]),
-            tasks!(Sequence[op("c"), op("d")]),
-        ]),
+        (
+            Sequence,
+            tasks![
+                (Sequence, tasks![op("a"), op("b")]),
+                (Sequence, tasks![op("c"), op("d")]),
+            ],
+        ),
         vec!["a", "b", "c", "d"],
     );
 }
@@ -74,10 +77,13 @@ fn sequence_nested_3() {
 #[test]
 fn sequence_nested_fail() {
     assert_plan(
-        tasks!(Sequence[
-            tasks!(Sequence[op("a"), (cond(false), op("b"))]),
-            tasks!(Sequence[op("c"), op("d")]),
-        ]),
+        (
+            Sequence,
+            tasks![
+                (Sequence, tasks![op("a"), (cond(false), op("b"))]),
+                (Sequence, tasks![op("c"), op("d")]),
+            ],
+        ),
         vec![],
     );
 }
@@ -85,10 +91,13 @@ fn sequence_nested_fail() {
 #[test]
 fn sequence_disabled_by_effects() {
     assert_plan(
-        tasks!(Sequence[
-            (op("a"), eff("disabled", true)),
-            (op("b"), cond_is("disabled", false)),
-        ]),
+        (
+            Sequence,
+            tasks![
+                (op("a"), eff("disabled", true)),
+                (op("b"), cond_is("disabled", false)),
+            ],
+        ),
         vec![],
     );
 }
@@ -96,70 +105,49 @@ fn sequence_disabled_by_effects() {
 #[test]
 fn sequence_enabled_by_effects() {
     assert_plan(
-        tasks!(Sequence[
-            (op("a"), eff("enabled", true)),
-            (op("b"), cond_is("enabled", true)),
-        ]),
+        (
+            Sequence,
+            tasks![
+                (op("a"), eff("enabled", true)),
+                (op("b"), cond_is("enabled", true)),
+            ],
+        ),
         vec!["a", "b"],
     );
 }
 
 #[test]
 fn select_single() {
-    assert_plan(tasks!(Select[op("a")]), vec!["a"]);
+    assert_plan((Select, tasks![op("a")]), vec!["a"]);
 }
 
 #[test]
 fn select_first() {
-    assert_plan(tasks!(Select[op("a"), op("b")]), vec!["a"]);
+    assert_plan((Select, tasks![op("a"), op("b")]), vec!["a"]);
 }
 
 #[test]
 fn select_empty() {
-    assert_plan(tasks!(Select[]), vec![]);
+    assert_plan((Select, tasks![]), vec![]);
 }
 
 #[test]
 fn select_first_conditional() {
-    assert_plan(
-        tasks!(Select[
-            (
-                cond(true),
-                op("a")
-            ),
-            op("b")
-        ]),
-        vec!["a"],
-    );
+    assert_plan((Select, tasks![(cond(true), op("a")), op("b")]), vec!["a"]);
 }
 
 #[test]
 fn select_second() {
-    assert_plan(
-        tasks!(Select[
-            (
-                cond(false),
-                op("a")
-            ),
-            op("b")
-        ]),
-        vec!["b"],
-    );
+    assert_plan((Select, tasks![(cond(false), op("a")), op("b")]), vec!["b"]);
 }
 
 #[test]
 fn select_second_conditional() {
     assert_plan(
-        tasks!(Select[
-            (
-                cond(false),
-                op("a")
-            ),
-            (
-                cond(true),
-                op("b")
-            ),
-        ]),
+        (
+            Select,
+            tasks![(cond(false), op("a")), (cond(true), op("b")),],
+        ),
         vec!["b"],
     );
 }
@@ -167,16 +155,13 @@ fn select_second_conditional() {
 #[test]
 fn select_nested() {
     assert_plan(
-        tasks!(Select[
-            (
-                cond(false),
-                op("a")
-            ),
-            tasks!(Select[
-                (cond(false), op("b")),
-                op("c")
-            ]),
-        ]),
+        (
+            Select,
+            tasks![
+                (cond(false), op("a")),
+                (Select, tasks![(cond(false), op("b")), op("c")]),
+            ],
+        ),
         vec!["c"],
     );
 }
@@ -184,15 +169,16 @@ fn select_nested() {
 #[test]
 fn sequence_and_select() {
     assert_plan(
-        tasks!(Select[
-            tasks!(Sequence[op("a"), (cond(false), op("b"))]),
-            tasks!(Select[
-                (cond(false),op("c")),
-                tasks!(Sequence[
-                    op("d"),
-                    op("e")
-                ])]),
-        ]),
+        (
+            Select,
+            tasks![
+                (Sequence, tasks![op("a"), (cond(false), op("b"))]),
+                (
+                    Select,
+                    tasks![(cond(false), op("c")), (Sequence, tasks![op("d"), op("e")])]
+                ),
+            ],
+        ),
         vec!["d", "e"],
     );
 }
@@ -200,18 +186,25 @@ fn sequence_and_select() {
 #[test]
 fn effect_not_disabled_by_invalid_branch() {
     assert_plan(
-        tasks!(Select[
-            tasks!(Sequence[
-                (op("a"), eff("disabled", true)),
-                (cond(false), op("b"))
-            ]),
-            tasks!(Select[
-                (cond(false),op("c")),
-                tasks!(Sequence[
-                    (cond_is("disabled", false), op("d")),
-                    op("e")
-                ])]),
-        ]),
+        (
+            Select,
+            tasks![
+                (
+                    Sequence,
+                    tasks![(op("a"), eff("disabled", true)), (cond(false), op("b"))]
+                ),
+                (
+                    Select,
+                    tasks![
+                        (cond(false), op("c")),
+                        (
+                            Sequence,
+                            tasks![(cond_is("disabled", false), op("d")), op("e")]
+                        )
+                    ]
+                ),
+            ],
+        ),
         vec!["d", "e"],
     );
 }

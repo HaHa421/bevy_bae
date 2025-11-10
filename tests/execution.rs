@@ -13,23 +13,19 @@ fn runs_plan() {
 
 #[test]
 fn runs_plan_with_condition() {
-    let mut app = App::test(tasks!(
-        Select[
-            (op("a"), cond_is("use_a", true)),
-            op("b")
-        ]
-    ));
+    let mut app = App::test((Select, tasks![(op("a"), cond_is("use_a", true)), op("b")]));
     app.update();
     app.assert_last_opt("b");
 }
 
 #[test]
 fn skips_plan_only_effect() {
-    let mut app = App::test(tasks!(
-        Sequence[
+    let mut app = App::test((
+        Sequence,
+        tasks![
             (op("a"), effects![Effect::set("use_b", true).plan_only()]),
             (op("b"), cond_is("use_b", true)),
-        ]
+        ],
     ));
     // plan
     app.update();
@@ -46,11 +42,12 @@ fn skips_plan_only_effect() {
 
 #[test]
 fn runs_plan_then_replans_with_new_effects() {
-    let mut app = App::test(tasks!(
-        Select[
+    let mut app = App::test((
+        Select,
+        tasks![
             (op("a"), cond_is("use_b", false), eff("use_b", true)),
             op("b")
-        ]
+        ],
     ));
     // plan
     app.update();
@@ -65,13 +62,16 @@ fn runs_plan_then_replans_with_new_effects() {
 
 #[test]
 fn replans_on_invalid_conditions() {
-    let mut app = App::test(tasks!(Select[
-        tasks!(Sequence[
-            op("a"),
-            (op("b"), cond_is("disabled", false)),
-        ]),
-        op("c"),
-    ]));
+    let mut app = App::test((
+        Select,
+        tasks![
+            (
+                Sequence,
+                tasks![op("a"), (op("b"), cond_is("disabled", false)),]
+            ),
+            op("c"),
+        ],
+    ));
     // plan
     app.update();
     app.assert_last_opt("a");
@@ -86,11 +86,12 @@ fn replans_on_invalid_conditions() {
 
 #[test]
 fn ignores_disabled_behavior() {
-    let mut app = App::test(tasks!(
-        Select[
+    let mut app = App::test((
+        Select,
+        tasks![
             (op("a"), cond_is("use_b", false), eff("use_b", true)),
             op("b")
-        ]
+        ],
     ));
     // plan
     app.update();
@@ -109,12 +110,7 @@ fn ignores_disabled_behavior() {
 
 #[test]
 fn replan_keeps_self() {
-    let mut app = App::test(tasks!(
-        Sequence[
-            op("a"),
-            op("b")
-        ]
-    ));
+    let mut app = App::test((Sequence, tasks![op("a"), op("b")]));
     app.update();
     app.assert_last_opt("a");
 
@@ -126,16 +122,18 @@ fn replan_keeps_self() {
 
 #[test]
 fn replan_keeps_higher_priority() {
-    let mut app = App::test(tasks!(
-        Select[
-            tasks!(Sequence[
-                (op("a"), cond_is("disabled", false), eff("disabled", true)),
-                op("b")
-            ]),
-            tasks!(Sequence[
-                op("c"),
-                op("d")
-            ])]
+    let mut app = App::test((
+        Select,
+        tasks![
+            (
+                Sequence,
+                tasks![
+                    (op("a"), cond_is("disabled", false), eff("disabled", true)),
+                    op("b")
+                ]
+            ),
+            (Sequence, tasks![op("c"), op("d")])
+        ],
     ));
     app.update();
     app.assert_last_opt("a");
@@ -155,16 +153,15 @@ fn replan_keeps_higher_priority() {
 
 #[test]
 fn replan_switches_to_higher_priority() {
-    let mut app = App::test(tasks!(
-        Select[
-            tasks!(Sequence[
-                (op("a"), cond_is("enabled", true)),
-                op("b")
-            ]),
-            tasks!(Sequence[
-                (op("c"), eff("enabled", true)),
-                op("d")
-            ])]
+    let mut app = App::test((
+        Select,
+        tasks![
+            (
+                Sequence,
+                tasks![(op("a"), cond_is("enabled", true)), op("b")]
+            ),
+            (Sequence, tasks![(op("c"), eff("enabled", true)), op("d")])
+        ],
     ));
     app.update();
     app.assert_last_opt("c");

@@ -3,16 +3,13 @@ use bevy_ecs::system::SystemId;
 use crate::{
     plan::{Plan, mtr::Mtr},
     prelude::*,
-    task::validation::{
-        BaeTaskPresent, insert_bae_task_present_on_add, remove_bae_task_present_on_remove,
-    },
 };
 
 pub mod relationship;
 pub mod select;
 pub mod sequence;
 
-pub trait CompoundTask: Send + Sync + 'static {
+pub trait CompoundTask: Component {
     fn register_decompose(commands: &mut Commands) -> DecomposeId;
 }
 
@@ -52,21 +49,18 @@ pub trait CompoundAppExt {
 impl CompoundAppExt for App {
     fn add_compound_task<C: CompoundTask>(&mut self) -> &mut Self {
         self.add_observer(insert_type_erased_task::<C>)
-            .add_observer(remove_type_erased_task::<C>)
-            .add_observer(insert_bae_task_present_on_add::<Tasks<C>>)
-            .add_observer(remove_bae_task_present_on_remove::<Tasks<C>>);
-        let _ = self.try_register_required_components::<Tasks<C>, BaeTaskPresent>();
+            .add_observer(remove_type_erased_task::<C>);
         self
     }
 }
 
-fn insert_type_erased_task<C: CompoundTask>(insert: On<Insert, Tasks<C>>, mut commands: Commands) {
+fn insert_type_erased_task<C: CompoundTask>(insert: On<Insert, C>, mut commands: Commands) {
     let system_id = C::register_decompose(&mut commands);
     commands
         .entity(insert.entity)
         .try_insert(TypeErasedCompoundTask::new(system_id));
 }
-fn remove_type_erased_task<C: CompoundTask>(remove: On<Remove, Tasks<C>>, mut commands: Commands) {
+fn remove_type_erased_task<C: CompoundTask>(remove: On<Remove, C>, mut commands: Commands) {
     commands
         .entity(remove.entity)
         .try_remove::<TypeErasedCompoundTask>();

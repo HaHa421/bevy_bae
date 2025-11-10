@@ -19,17 +19,20 @@ fn empty_plan_has_no_effects() {
 
 #[test]
 fn empty_plan_from_sequence_has_no_effects() {
-    assert_effects(tasks!(Sequence[]), vec![]);
+    assert_effects((Sequence, tasks![]), vec![]);
 }
 
 #[test]
 fn sequence_effects() {
     assert_effects(
-        tasks!(Sequence[
-            (op("a"), eff("foo")),
-            (op("b"), eff("bar")),
-            (op("c"), eff("baz")),
-        ]),
+        (
+            Sequence,
+            tasks![
+                (op("a"), eff("foo")),
+                (op("b"), eff("bar")),
+                (op("c"), eff("baz")),
+            ],
+        ),
         vec![
             vec![("foo", true.into())],
             vec![("bar", true.into())],
@@ -41,11 +44,14 @@ fn sequence_effects() {
 #[test]
 fn sequence_effects_overwriting() {
     assert_effects(
-        tasks!(Sequence[
-            (op("a"), eff("foo")),
-            (op("b"), eff_set("foo", "1")),
-            (op("c"), eff_set("foo", 2.0)),
-        ]),
+        (
+            Sequence,
+            tasks![
+                (op("a"), eff("foo")),
+                (op("b"), eff_set("foo", "1")),
+                (op("c"), eff_set("foo", 2.0)),
+            ],
+        ),
         vec![
             vec![("foo", true.into())],
             vec![("foo", "1".into())],
@@ -57,11 +63,23 @@ fn sequence_effects_overwriting() {
 #[test]
 fn sequence_effects_stacked() {
     assert_effects(
-        tasks!(Sequence[
-            (op("a"), effects![Effect::set("a", true), Effect::set("b", true)]),
-            (op("b"), effects![Effect::set("c", true), Effect::set("d", true)]),
-            (op("c"), effects![Effect::set("e", true), Effect::set("f", true)]),
-        ]),
+        (
+            Sequence,
+            tasks![
+                (
+                    op("a"),
+                    effects![Effect::set("a", true), Effect::set("b", true)]
+                ),
+                (
+                    op("b"),
+                    effects![Effect::set("c", true), Effect::set("d", true)]
+                ),
+                (
+                    op("c"),
+                    effects![Effect::set("e", true), Effect::set("f", true)]
+                ),
+            ],
+        ),
         vec![
             vec![("a", true.into()), ("b", true.into())],
             vec![("c", true.into()), ("d", true.into())],
@@ -73,11 +91,14 @@ fn sequence_effects_stacked() {
 #[test]
 fn select_effects() {
     assert_effects(
-        tasks!(Select[
-            (op("a"), cond(false), eff("foo")),
-            (op("b"), eff("bar")),
-            (op("c"), eff("baz")),
-        ]),
+        (
+            Select,
+            tasks![
+                (op("a"), cond(false), eff("foo")),
+                (op("b"), eff("bar")),
+                (op("c"), eff("baz")),
+            ],
+        ),
         vec![vec![("bar", true.into())]],
     );
 }
@@ -85,14 +106,17 @@ fn select_effects() {
 #[test]
 fn select_effects_undoes_invalid_effects() {
     assert_effects(
-        tasks!(Select[
-            tasks!(Sequence[
-                (op("a"), eff("foo")),
-                (op("b"), cond(false), eff("bar")),
-            ]),
-            (op("c"), cond(false), eff("baz")),
-            (op("d"), eff("quux")),
-        ]),
+        (
+            Select,
+            tasks![
+                (
+                    Sequence,
+                    tasks![(op("a"), eff("foo")), (op("b"), cond(false), eff("bar")),]
+                ),
+                (op("c"), cond(false), eff("baz")),
+                (op("d"), eff("quux")),
+            ],
+        ),
         vec![vec![("quux", true.into())]],
     );
 }

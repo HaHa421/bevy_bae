@@ -4,7 +4,8 @@ use crate::{
     task::compound::{DecomposeId, DecomposeInput, DecomposeResult, TypeErasedCompoundTask},
 };
 
-#[derive(Debug, Default, Reflect)]
+#[derive(Debug, Component, Default, Reflect)]
+#[reflect(Component)]
 pub struct Sequence;
 
 impl CompoundTask for Sequence {
@@ -16,7 +17,7 @@ impl CompoundTask for Sequence {
 fn decompose_sequence(
     In(mut ctx): In<DecomposeInput>,
     world: &mut World,
-    mut task_relations: Local<QueryState<(NameOrEntity, &Tasks<Sequence>)>>,
+    mut task_relations: Local<QueryState<(NameOrEntity, &Tasks)>>,
     mut individual_tasks: Local<
         QueryState<(
             Entity,

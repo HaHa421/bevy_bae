@@ -8,36 +8,33 @@ fn main() {
 fn trunk_thumper_domain() -> impl Bundle {
     (
         Name::new("Be Trunk Thumper"),
-        tasks!(Select[
+        Select,
+        tasks![
             (
                 Name::new("Fight enemy"),
-                tasks!(Sequence[
+                Sequence,
+                tasks![
                     (
-                        conditions![
-                            Condition::eq("can_see_enemy", true),
-                        ],
+                        conditions![Condition::eq("can_see_enemy", true)],
                         Operator::new(navigate_to_enemy),
-                        effects![
-                            Effect::set("location", "enemy"),
-                        ],
+                        effects![Effect::set("location", "enemy")],
                     ),
                     Operator::new(do_trunk_slam),
-                ]),
+                ],
             ),
             (
                 Name::new("Patrol bridges"),
-                tasks!(Sequence[
+                Sequence,
+                tasks![
                     Operator::new(choose_bridge_to_check),
                     (
                         Operator::new(navigate_to_bridge),
-                        effects![
-                            Effect::set("location", "bridge"),
-                        ],
+                        effects![Effect::set("location", "bridge")],
                     ),
                     Operator::new(check_bridge),
-                ]),
+                ],
             )
-        ]),
+        ],
     )
 }
 

@@ -1,31 +1,21 @@
-use crate::prelude::*;
 use alloc::slice;
 use bevy_ecs::relationship::{RelatedSpawner, RelatedSpawnerCommands};
-use core::{fmt::Debug, iter::Copied, marker::PhantomData};
+use core::iter::Copied;
+
+use crate::{prelude::*, task::validation::BaeTaskPresent};
 
 #[derive(Component, Deref, Reflect, Debug, PartialEq, Eq, Clone)]
-#[relationship(relationship_target = Tasks<T>)]
+#[relationship(relationship_target = Tasks)]
 #[reflect(Component)]
-pub struct TaskOf<T: CompoundTask> {
-    #[deref]
-    #[relationship]
-    entity: Entity,
-    #[reflect(ignore)]
-    marker: PhantomData<T>,
-}
+pub struct TaskOf(pub Entity);
 
-#[derive(Component, Deref, Reflect, Debug, Default, PartialEq, Eq)]
-#[relationship_target(relationship = TaskOf<T>, linked_spawn)]
+#[derive(Component, Clone, Deref, Reflect, Debug, Default, PartialEq, Eq)]
+#[relationship_target(relationship = TaskOf, linked_spawn)]
 #[reflect(Component)]
-pub struct Tasks<T: CompoundTask> {
-    #[deref]
-    #[relationship]
-    entities: Vec<Entity>,
-    #[reflect(ignore)]
-    marker: PhantomData<T>,
-}
+#[require(BaeTaskPresent)]
+pub struct Tasks(Vec<Entity>);
 
-impl<'a, T: CompoundTask> IntoIterator for &'a Tasks<T> {
+impl<'a> IntoIterator for &'a Tasks {
     type Item = Entity;
     type IntoIter = Copied<slice::Iter<'a, Entity>>;
 
@@ -34,13 +24,14 @@ impl<'a, T: CompoundTask> IntoIterator for &'a Tasks<T> {
     }
 }
 
-pub type TaskSpawner<'w, T> = RelatedSpawner<'w, TaskOf<T>>;
-pub type TaskSpawnerCommands<'w, T> = RelatedSpawnerCommands<'w, TaskOf<T>>;
+pub type TaskSpawner<'w> = RelatedSpawner<'w, TaskOf>;
+
+pub type TaskSpawnerCommands<'w> = RelatedSpawnerCommands<'w, TaskOf>;
 
 #[macro_export]
 macro_rules! tasks {
-    ($compound:ty[$($condition:expr),* $(,)?]) => {
-        ::bevy::prelude::related!($crate::prelude::Tasks<$compound>[$($condition),*])
+    [$($task:expr),*$(,)?] => {
+        ::bevy::prelude::related!($crate::prelude::Tasks[$($task),*])
     };
 }
 

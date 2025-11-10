@@ -73,7 +73,9 @@ impl Plugin for BaePlugin {
         app.world_mut().register_component::<Condition>();
         app.world_mut().register_component::<Effect>();
         app.add_observer(insert_bae_task_present_on_add::<Operator>)
-            .add_observer(remove_bae_task_present_on_remove::<Operator>);
+            .add_observer(remove_bae_task_present_on_remove::<Operator>)
+            .add_observer(insert_bae_task_present_on_add::<Tasks>)
+            .add_observer(remove_bae_task_present_on_remove::<Tasks>);
         app.add_compound_task::<Select>()
             .add_compound_task::<Sequence>();
         app.add_observer(update_plan);

@@ -124,8 +124,6 @@ fn update_plan_inner(
                     // We found the same plan we are already running. Just keep that one.
                     return Ok(());
                 }
-                error!("prev mtr: {:?}", previous_mtr);
-                error!("current mtr: {:?}", plan.mtr);
                 plan
             }
             DecomposeResult::Failure => Plan::default(),
