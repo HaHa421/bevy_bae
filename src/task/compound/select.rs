@@ -120,9 +120,8 @@ fn decompose_select(
                     ctx.plan = plan;
                     ctx.world_state = world_state;
                 }
-                Ok(DecomposeResult::Failure) => continue,
                 Ok(DecomposeResult::Rejection) => return DecomposeResult::Rejection,
-                Err(_) => continue,
+                Ok(DecomposeResult::Failure) | Err(_) => continue,
             }
         } else {
             unreachable!()

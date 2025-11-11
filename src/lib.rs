@@ -1,6 +1,6 @@
 #![doc = include_str!("../readme.md")]
 
-/// Everything you need to get started with bevy_bae
+/// Everything you need to get started with `bevy_bae`
 pub mod prelude {
     pub use crate::{
         BaePlugin, BaeSystems,
@@ -60,7 +60,7 @@ pub mod effect;
 pub mod plan;
 pub mod task;
 
-/// The plugin required to use bevy_bae. The schedule used can be configured with [`Self::new`], and the default is [`FixedUpdate`].
+/// The plugin required to use `bevy_bae`. The schedule used can be configured with [`Self::new`], and the default is [`FixedUpdate`].
 pub struct BaePlugin {
     schedule: Interned<dyn ScheduleLabel>,
 }
@@ -107,7 +107,7 @@ impl Plugin for BaePlugin {
     }
 }
 
-/// System set used by all systems of bevy_bae.
+/// System set used by all systems of `bevy_bae`.
 #[derive(SystemSet, Debug, Clone, Copy, Hash, PartialEq, Eq)]
 pub enum BaeSystems {
     /// Executes [`Plan`]s, and replans them if necessary.

@@ -111,9 +111,8 @@ fn decompose_sequence(
                     ctx.plan = plan;
                     ctx.world_state = world_state;
                 }
-                Ok(DecomposeResult::Failure) => return DecomposeResult::Failure,
                 Ok(DecomposeResult::Rejection) => return DecomposeResult::Rejection,
-                Err(_) => return DecomposeResult::Failure,
+                Ok(DecomposeResult::Failure) | Err(_) => return DecomposeResult::Failure,
             }
         } else {
             unreachable!()
