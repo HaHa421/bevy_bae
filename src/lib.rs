@@ -1,3 +1,6 @@
+#![doc = include_str!("../readme.md")]
+
+/// Everything you need to get started with bevy_bae
 pub mod prelude {
     pub use crate::{
         BaePlugin, BaeSystems,
@@ -14,14 +17,14 @@ pub mod prelude {
         },
         plan::{Plan, update::UpdatePlan},
         task::{
-            TaskStatus,
+            OperatorStatus,
             compound::{
                 CompoundTask,
                 relationship::{TaskOf, TaskSpawner, TaskSpawnerCommands, Tasks, tasks},
                 select::Select,
                 sequence::Sequence,
             },
-            primitive::{Operator, OperatorInput},
+            operator::{Operator, OperatorInput},
         },
     };
     pub(crate) use {
@@ -57,8 +60,18 @@ pub mod effect;
 pub mod plan;
 pub mod task;
 
+/// The plugin required to use bevy_bae. The schedule used can be configured with [`Self::new`], and the default is [`FixedUpdate`].
 pub struct BaePlugin {
     schedule: Interned<dyn ScheduleLabel>,
+}
+
+impl BaePlugin {
+    /// Create a new plugin in the given schedule. The default is [`FixedUpdate`].
+    pub fn new(schedule: impl ScheduleLabel) -> Self {
+        Self {
+            schedule: schedule.intern(),
+        }
+    }
 }
 
 impl Default for BaePlugin {
@@ -70,7 +83,7 @@ impl Default for BaePlugin {
 }
 impl Plugin for BaePlugin {
     fn build(&self, app: &mut App) {
-        app.configure_sets(self.schedule, (BaeSystems::RunTaskSystems,).chain());
+        app.configure_sets(self.schedule, (BaeSystems::ExecutePlan,).chain());
         app.world_mut().register_component::<Condition>();
         app.world_mut().register_component::<Effect>();
         app.add_observer(insert_bae_task_present_on_add::<Operator>)
@@ -88,12 +101,14 @@ impl Plugin for BaePlugin {
                 execute_plan,
             )
                 .chain()
-                .in_set(BaeSystems::RunTaskSystems),),
+                .in_set(BaeSystems::ExecutePlan),),
         );
     }
 }
 
+/// System set used by all systems of bevy_bae.
 #[derive(SystemSet, Debug, Clone, Copy, Hash, PartialEq, Eq)]
 pub enum BaeSystems {
-    RunTaskSystems,
+    /// Executes [`Plan`]s, and replans them if necessary.
+    ExecutePlan,
 }

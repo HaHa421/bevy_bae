@@ -1,3 +1,5 @@
+//! Tests the plan execution
+
 use bevy::{log::LogPlugin, prelude::*, time::TimeUpdateStrategy};
 use bevy_bae::prelude::*;
 use bevy_ecs::entity_disabling::Disabled;
@@ -222,7 +224,7 @@ impl TestApp for App {
     #[track_caller]
     fn assert_last_opt(&self, name: impl Into<Option<&'static str>>) {
         let name: Option<&'static str> = name.into();
-        let name: Option<String> = name.map(|s| s.into());
+        let name: Option<String> = name.map(Into::into);
         let actual = self.world().resource::<LastOpt>().0.clone();
         assert_eq!(actual, name);
     }
@@ -247,9 +249,9 @@ fn op(name: &str) -> impl Bundle {
     (
         Name::new(name.clone()),
         Operator::new(
-            move |_: In<OperatorInput>, mut last_opt: ResMut<LastOpt>| -> TaskStatus {
+            move |_: In<OperatorInput>, mut last_opt: ResMut<LastOpt>| -> OperatorStatus {
                 last_opt.0 = Some(name.clone());
-                TaskStatus::Success
+                OperatorStatus::Success
             },
         ),
     )

@@ -1,3 +1,6 @@
+//! Shows a minimal example of using BAE.
+//! The NPC will greet the player once per second.
+
 use bevy::prelude::*;
 use bevy_bae::prelude::*;
 
@@ -16,18 +19,18 @@ fn setup(mut commands: Commands) {
     ));
 }
 
-fn greet(_: In<OperatorInput>) -> TaskStatus {
+fn greet(_: In<OperatorInput>) -> OperatorStatus {
     info!("Oh hai!!! I greet you every second. Very polite, eh?");
-    TaskStatus::Success
+    OperatorStatus::Success
 }
 
-fn idle(_: In<OperatorInput>, time: Res<Time>, mut timer: Local<Option<Timer>>) -> TaskStatus {
+fn idle(_: In<OperatorInput>, time: Res<Time>, mut timer: Local<Option<Timer>>) -> OperatorStatus {
     let timer = timer.get_or_insert_with(|| Timer::from_seconds(1.0, TimerMode::Once));
     timer.tick(time.delta());
     if timer.is_finished() {
         timer.reset();
-        TaskStatus::Success
+        OperatorStatus::Success
     } else {
-        TaskStatus::Continue
+        OperatorStatus::Continue
     }
 }

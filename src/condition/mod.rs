@@ -1,3 +1,5 @@
+//! Contains the [`Condition`] component.
+
 use alloc::sync::Arc;
 use core::fmt::Debug;
 use core::ops::RangeBounds;
@@ -8,6 +10,8 @@ use crate::prelude::*;
 
 pub mod relationship;
 
+/// A condition for an associated [`Operator`].
+/// If the condition is unfulfilled, the compound task containing the [`Operator`] may be pruned.
 #[derive(Component, Clone, Reflect)]
 #[reflect(Component)]
 pub struct Condition {
@@ -23,40 +27,50 @@ impl PartialEq for Condition {
 impl Eq for Condition {}
 
 impl Condition {
+    /// Creates a new condition with the given predicate.
     pub fn new(predicate: impl Fn(&mut Props) -> bool + Send + Sync + 'static) -> Self {
         Self {
             predicate: Arc::new(predicate),
         }
     }
 
+    /// Evaluates the condition with the given properties, returning whether it is fulfilled.
+    /// It will insert props holding default values if they are queried, but are not yet present in [`Props`].
     pub fn is_fullfilled(&self, props: &mut Props) -> bool {
         (self.predicate)(props)
     }
 
+    /// Shorthand for creating a condition for the concept of `props[name] == value`
     pub fn eq(name: impl Into<Ustr>, value: impl Into<Value>) -> Self {
-        Self::predicate(name, value, |a, b| a == b)
+        Self::cmp(name, value, |a, b| a == b)
     }
 
+    /// Shorthand for creating a condition for the concept of `props[name] != value`
     pub fn ne(name: impl Into<Ustr>, value: impl Into<Value>) -> Self {
-        Self::predicate(name, value, |a, b| a != b)
+        Self::cmp(name, value, |a, b| a != b)
     }
 
+    /// Shorthand for creating a condition for the concept of `props[name] > value`
     pub fn gt(name: impl Into<Ustr>, value: impl Into<Value>) -> Self {
-        Self::predicate(name, value, |a, b| a > b)
+        Self::cmp(name, value, |a, b| a > b)
     }
 
-    pub fn gte(name: impl Into<Ustr>, value: impl Into<Value>) -> Self {
-        Self::predicate(name, value, |a, b| a >= b)
+    /// Shorthand for creating a condition for the concept of `props[name] >= value`
+    pub fn ge(name: impl Into<Ustr>, value: impl Into<Value>) -> Self {
+        Self::cmp(name, value, |a, b| a >= b)
     }
 
+    /// Shorthand for creating a condition for the concept of `props[name] < value`
     pub fn lt(name: impl Into<Ustr>, value: impl Into<Value>) -> Self {
-        Self::predicate(name, value, |a, b| a < b)
+        Self::cmp(name, value, |a, b| a < b)
     }
 
-    pub fn lte(name: impl Into<Ustr>, value: impl Into<Value>) -> Self {
-        Self::predicate(name, value, |a, b| a <= b)
+    /// Shorthand for creating a condition for the concept of `props[name] <= value`
+    pub fn le(name: impl Into<Ustr>, value: impl Into<Value>) -> Self {
+        Self::cmp(name, value, |a, b| a <= b)
     }
 
+    /// Shorthand for creating a condition for the concept of `range.contains(props[name])`
     pub fn in_range(
         name: impl Into<Ustr>,
         range: impl RangeBounds<f32> + Send + Sync + 'static,
@@ -65,15 +79,18 @@ impl Condition {
         Self::new(move |props| range.contains(props.get_mut::<f32>(name)))
     }
 
+    /// Shorthand for creating a condition that always evaluates to true
     pub fn always_true() -> Self {
         Self::new(|_| true)
     }
 
+    /// Shorthand for creating a condition that always evaluates to false
     pub fn always_false() -> Self {
         Self::new(|_| false)
     }
 
-    pub fn predicate(
+    /// Shortcut for creating a condition that compares a property with a value.
+    pub fn cmp(
         name: impl Into<Ustr>,
         value: impl Into<Value>,
         predicate: impl Fn(Value, Value) -> bool + Send + Sync + 'static,

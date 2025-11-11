@@ -1,17 +1,21 @@
+//! Contains the [`Mtr`] struct.
+
 use core::cmp::Ordering;
 
 use crate::prelude::*;
 
 /// Method Traversal Record
-#[derive(Component, Clone, Default, Reflect, Debug, Deref, DerefMut)]
+#[derive(Clone, Default, Reflect, Debug, Deref, DerefMut)]
 pub struct Mtr(pub Vec<u16>);
 
 impl Mtr {
-    pub fn with(mut self, method_id: u16) -> Self {
-        self.push(method_id);
+    /// Adds a new method order to the MTR. Lower values mean higher priority.
+    pub fn with(mut self, method_order: u16) -> Self {
+        self.push(method_order);
         self
     }
 
+    /// Creates an empty MTR that will be considered lower priority than any other MTR.
     pub fn none() -> Self {
         Mtr(vec![])
     }

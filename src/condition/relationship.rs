@@ -1,14 +1,19 @@
+//! Types needed for the [`conditions`] macro.
+
 use alloc::slice;
 use bevy_ecs::relationship::{RelatedSpawner, RelatedSpawnerCommands};
 use core::iter::Copied;
 
 use crate::prelude::*;
 
+/// Points from an [`Condition`] to its associated [`Operator`]
 #[derive(Component, Deref, Reflect, Debug, PartialEq, Eq, Clone)]
 #[relationship(relationship_target = Conditions)]
 #[reflect(Component)]
 pub struct ConditionOf(pub Entity);
 
+/// Relationship target for [`Condition`]s. Created with [`conditions!`].
+/// Only valid on [`Operator`]s.
 #[derive(Component, Clone, Deref, Reflect, Debug, Default, PartialEq, Eq)]
 #[relationship_target(relationship = ConditionOf, linked_spawn)]
 #[reflect(Component)]
@@ -23,10 +28,13 @@ impl<'a> IntoIterator for &'a Conditions {
     }
 }
 
+/// Shorthand for a [`RelatedSpawner`] for [`ConditionOf`] relations.
 pub type ConditionSpawner<'w> = RelatedSpawner<'w, ConditionOf>;
 
+/// Shorthand for a [`RelatedSpawnerCommands`] for [`ConditionOf`] relations.
 pub type ConditionSpawnerCommands<'w> = RelatedSpawnerCommands<'w, ConditionOf>;
 
+/// Shorthand for creating a [`Conditions`] relation
 #[macro_export]
 macro_rules! conditions {
     [$($condition:expr),*$(,)?] => {

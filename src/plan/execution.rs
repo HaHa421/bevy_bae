@@ -1,9 +1,17 @@
 use crate::prelude::*;
 
-pub(crate) fn update_empty_plans(mut plans: Query<(Entity, &Plan)>, mut commands: Commands) {
-    for (entity, plan) in plans.iter_mut() {
+pub(crate) fn update_empty_plans(
+    mut plans: Query<(Entity, NameOrEntity, &Plan)>,
+    mut commands: Commands,
+) {
+    for (entity, name, plan) in plans.iter_mut() {
         if plan.is_empty() {
             commands.entity(entity).trigger(UpdatePlan::new);
+            let name = name
+                .name
+                .map(|n| format!("{} ({}))", name.entity, n))
+                .unwrap_or_else(|| format!("{}", name.entity));
+            debug!("{name}: Plan is empty, triggering replan.");
         }
     }
 }
@@ -56,7 +64,7 @@ pub(crate) fn execute_plan(
                 }
             }
         }
-        let result: Result<TaskStatus, _> = if all_conditions_met {
+        let result: Result<OperatorStatus, _> = if all_conditions_met {
             debug!("{name}: executing plan step");
             let input = OperatorInput {
                 planner: entity,
@@ -64,11 +72,11 @@ pub(crate) fn execute_plan(
             };
             world.run_system_with(planned_operator.system, input)
         } else {
-            Ok(TaskStatus::Failure)
+            Ok(OperatorStatus::Failure)
         };
 
         let force_replan = match result {
-            Ok(TaskStatus::Success) => {
+            Ok(OperatorStatus::Success) => {
                 debug!("{name}: Plan step completed successfully, moving to next step");
                 let step = world
                     .entity_mut(entity)
@@ -90,12 +98,12 @@ pub(crate) fn execute_plan(
 
                 false
             }
-            Ok(TaskStatus::Continue) => {
+            Ok(OperatorStatus::Continue) => {
                 debug!("{name}: Plan step ongoing.");
                 // Even if the current plan is empty, we still want to continue the execution of the last step!
                 continue;
             }
-            Ok(TaskStatus::Failure) => {
+            Ok(OperatorStatus::Failure) => {
                 debug!("{name}: Plan step failed, aborting plan");
                 true
             }
@@ -111,8 +119,7 @@ pub(crate) fn execute_plan(
                 .is_none_or(|plan| plan.is_empty())
         {
             world.entity_mut(entity).insert(Plan::default());
-            debug!("{name}: Plan is empty, triggering replan.");
-            world.entity_mut(entity).trigger(UpdatePlan::new);
+            debug!("{name}: forcing a replan.");
         }
     }
 }

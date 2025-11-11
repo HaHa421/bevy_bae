@@ -1,9 +1,12 @@
+//! Contains the [`Sequence`] [`CompoundTask`]
+
 use crate::{
     plan::PlannedOperator,
     prelude::*,
     task::compound::{DecomposeId, DecomposeInput, DecomposeResult, TypeErasedCompoundTask},
 };
 
+/// A [`CompoundTask`] that decomposes into all subtasks, given that they are all valid.
 #[derive(Debug, Component, Default, Reflect)]
 #[reflect(Component)]
 pub struct Sequence;
@@ -97,7 +100,7 @@ fn decompose_sequence(
             match world.run_system_with(
                 compound_task.decompose,
                 DecomposeInput {
-                    root: ctx.root,
+                    planner: ctx.planner,
                     compound_task: task_entity,
                     world_state: ctx.world_state.clone(),
                     plan: ctx.plan.clone(),
@@ -129,7 +132,7 @@ fn decompose_sequence(
                 ctx.plan.back_mut().unwrap().effects.push(effect.clone());
             }
         }
-        found_anything = true
+        found_anything = true;
     }
 
     debug!("sequence {seq_name}: done");

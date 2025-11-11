@@ -1,3 +1,5 @@
+//! Contains the [`UpdatePlan`] [`EntityEvent`].
+
 use bevy_ecs::error::{DefaultErrorHandler, HandleError as _};
 use bevy_ecs::system::command::run_system_cached_with;
 use bevy_mod_props::PropsExt;
@@ -7,6 +9,10 @@ use crate::plan::mtr::Mtr;
 use crate::prelude::*;
 use crate::task::compound::{DecomposeInput, DecomposeResult, TypeErasedCompoundTask};
 
+/// [`EntityEvent`] for updating a plan. Trigger this on an entity with a [`Plan`] to update its plan.
+/// Updating it will only have an effect if the new plan found has a higher priority than the current one.
+/// This ensures that ongoing [`Sequence`]s are not suddenly interrupted when updating the plan.
+/// If you want to instead wipe the slate clean, insert [`Plan::new`] instead, or call [`Plan::clear`].
 #[derive(EntityEvent)]
 pub struct UpdatePlan {
     #[event_target]
@@ -20,6 +26,7 @@ impl From<Entity> for UpdatePlan {
 }
 
 impl UpdatePlan {
+    /// Create a new [`UpdatePlan`] event for the given entity. Usually called with the [`EntityCommands::trigger`] API.
     pub fn new(entity: Entity) -> Self {
         Self::from(entity)
     }
@@ -85,14 +92,14 @@ fn update_plan_inner(
         // well that was easy: this root has just a single operator
         debug!("behavior {behav_name}: operator");
         Plan {
-            operators: [PlannedOperator {
+            operators_left: [PlannedOperator {
                 system: operator.system_id(),
                 entity: root,
                 effects: vec![],
             }]
             .into(),
             mtr: Mtr::default(),
-            full_entities: Vec::new(),
+            operators_total: Vec::new(),
         }
     } else if let Some(compound_task) = task {
         debug!("behavior {behav_name}: compound task");
@@ -104,7 +111,7 @@ fn update_plan_inner(
         let ctx = DecomposeInput {
             world_state,
             plan: Plan::default(),
-            root,
+            planner: root,
             compound_task: root,
             previous_mtr: previous_mtr.clone(),
         };
@@ -113,11 +120,11 @@ fn update_plan_inner(
             DecomposeResult::Success { plan, .. } => {
                 if previous_mtr == plan.mtr
                     && world.entity(root).get::<Plan>().is_some_and(|prev_plan| {
-                        prev_plan.full_entities.len() == plan.operators.len()
+                        prev_plan.operators_total.len() == plan.operators_left.len()
                             && prev_plan
-                                .full_entities
+                                .operators_total
                                 .iter()
-                                .zip(plan.operators.iter())
+                                .zip(plan.operators_left.iter())
                                 .all(|(a, b)| *a == b.entity)
                     })
                 {
@@ -150,11 +157,11 @@ fn update_plan_inner(
     debug!("behavior {behav_name}: finished with {plan:?}");
 
     let op_entities = plan
-        .operators
+        .operators_left
         .iter()
         .map(|op| op.entity)
         .collect::<Vec<_>>();
-    plan.full_entities = op_entities;
+    plan.operators_total = op_entities;
 
     world.entity_mut(root).insert(plan);
     Ok(())

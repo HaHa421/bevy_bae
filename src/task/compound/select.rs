@@ -1,9 +1,12 @@
+//! Contains the [`Select`] [`CompoundTask`]
+
 use crate::{
     plan::PlannedOperator,
     prelude::*,
     task::compound::{DecomposeId, DecomposeInput, DecomposeResult, TypeErasedCompoundTask},
 };
 
+/// A [`CompoundTask`] that decomposes into the first valid subtask.
 #[derive(Debug, Component, Default, Reflect)]
 #[reflect(Component)]
 pub struct Select;
@@ -106,7 +109,7 @@ fn decompose_select(
             match world.run_system_with(
                 compound_task.decompose,
                 DecomposeInput {
-                    root: ctx.root,
+                    planner: ctx.planner,
                     compound_task: task_entity,
                     world_state: ctx.world_state.clone(),
                     plan: ctx.plan.clone(),

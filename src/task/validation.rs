@@ -66,7 +66,7 @@ mod tests {
             .add_systems(Startup, |mut commands: Commands| {
                 commands.spawn((
                     Tasks::default(),
-                    Operator::new(|_: In<OperatorInput>| TaskStatus::Success),
+                    Operator::new(|_: In<OperatorInput>| OperatorStatus::Success),
                 ));
             })
             .update();
@@ -77,7 +77,9 @@ mod tests {
         App::new()
             .add_plugins((MinimalPlugins, BaePlugin::default()))
             .add_systems(Startup, |mut commands: Commands| {
-                commands.spawn(Operator::new(|_: In<OperatorInput>| TaskStatus::Success));
+                commands.spawn(Operator::new(|_: In<OperatorInput>| {
+                    OperatorStatus::Success
+                }));
             })
             .update();
     }

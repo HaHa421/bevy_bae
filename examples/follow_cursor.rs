@@ -1,3 +1,6 @@
+//! A small setup showing how to code the behavior for a 2D triangle that chases the cursor
+//! and starts rotation when close to it.
+
 use bevy::{color::palettes::tailwind, picking::pointer::PointerInteraction, prelude::*};
 use bevy_bae::prelude::*;
 
@@ -7,7 +10,7 @@ fn main() {
         .add_systems(Startup, setup)
         .add_systems(
             FixedUpdate,
-            update_close_to_cursor.before(BaeSystems::RunTaskSystems),
+            update_close_to_cursor.before(BaeSystems::ExecutePlan),
         )
         .run();
 }
@@ -44,17 +47,17 @@ fn setup(
     ));
 }
 
-fn rotate(In(input): In<OperatorInput>, mut transforms: Query<&mut Transform>) -> TaskStatus {
+fn rotate(In(input): In<OperatorInput>, mut transforms: Query<&mut Transform>) -> OperatorStatus {
     let mut npc_transform = transforms.get_mut(input.planner).unwrap();
     npc_transform.rotate_z(0.1);
-    TaskStatus::Continue
+    OperatorStatus::Continue
 }
 
 fn follow_cursor(
     In(input): In<OperatorInput>,
     pointers: Query<&PointerInteraction>,
     mut transforms: Query<&mut Transform>,
-) -> TaskStatus {
+) -> OperatorStatus {
     let mut npc_transform = transforms.get_mut(input.planner).unwrap();
     for point in pointers
         .iter()
@@ -65,7 +68,7 @@ fn follow_cursor(
         npc_transform.align(Vec3::NEG_Z, Vec3::NEG_Z, Vec3::Y, dir);
         npc_transform.translation += dir * 2.5;
     }
-    TaskStatus::Continue
+    OperatorStatus::Continue
 }
 
 fn update_close_to_cursor(

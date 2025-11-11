@@ -1,3 +1,5 @@
+//! Tests the plan generation
+
 use bevy::{log::LogPlugin, prelude::*, time::TimeUpdateStrategy};
 use bevy_bae::{plan::Plan, prelude::*};
 use std::sync::Mutex;
@@ -245,7 +247,7 @@ fn assert_plan(behavior: impl Bundle, plan: Vec<&'static str>) {
 
     let mut operators = app.world().try_query::<(&Operator, &Name)>().unwrap();
     let actual_plan_names = actual_plan
-        .operators
+        .operators_left
         .into_iter()
         .map(|planned_op| {
             operators
@@ -257,7 +259,10 @@ fn assert_plan(behavior: impl Bundle, plan: Vec<&'static str>) {
         })
         .collect::<Vec<_>>();
 
-    let plan_names = plan.into_iter().map(|n| n.to_string()).collect::<Vec<_>>();
+    let plan_names = plan
+        .into_iter()
+        .map(ToString::to_string)
+        .collect::<Vec<_>>();
 
     assert_eq!(plan_names, actual_plan_names);
 }

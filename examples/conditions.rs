@@ -1,3 +1,7 @@
+//! Shows how to use conditions and effects in BAE.
+//! Once the player clicks the left mouse button, the NPC will start spamming greetings every frame.
+//! When the player clicks the right mouse button, the NPC announces that they're done and stops spamming.
+
 use bevy::prelude::*;
 use bevy_bae::prelude::*;
 
@@ -28,19 +32,19 @@ fn setup(mut commands: Commands) {
     ));
 }
 
-fn greet(_: In<OperatorInput>) -> TaskStatus {
+fn greet(_: In<OperatorInput>) -> OperatorStatus {
     info!("Oh hai!!! (Press right mouse button to stop the spam.)");
-    TaskStatus::Success
+    OperatorStatus::Success
 }
 
-fn say_stop(_: In<OperatorInput>) -> TaskStatus {
+fn say_stop(_: In<OperatorInput>) -> OperatorStatus {
     info!("Ok ok I will stop now :<");
-    TaskStatus::Success
+    OperatorStatus::Success
 }
 
-fn idle(_: In<OperatorInput>) -> TaskStatus {
+fn idle(_: In<OperatorInput>) -> OperatorStatus {
     // nothing to do
-    TaskStatus::Success
+    OperatorStatus::Success
 }
 
 fn update_state(press: On<Pointer<Press>>, mut props: Single<&mut Props, With<Plan>>) {
@@ -48,7 +52,7 @@ fn update_state(press: On<Pointer<Press>>, mut props: Single<&mut Props, With<Pl
         PointerButton::Primary => props.set("greet_mode", "on"),
         PointerButton::Secondary => {
             if props.get::<Ustr>("greet_mode") == "on" {
-                props.set("greet_mode", "ending")
+                props.set("greet_mode", "ending");
             }
         }
         _ => (),
