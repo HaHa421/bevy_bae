@@ -20,7 +20,7 @@ bevy_reflect = { version = "0.17", default-features = false }
 bevy_derive = { version = "0.17", default-features = false }
 bevy_ptr = { version = "0.17", default-features = false }
 bevy_utils = { version = "0.17", default-features = false }
-log = "0.4" # Directly depend on `log` like other `no_std` Bevy crates, since `bevy_log` currently requires `std`.
+tracing = "0.1"
 
 bevy_mod_props = { version = "0.1", git = "https://github.com/NthTensor/trill" }
 

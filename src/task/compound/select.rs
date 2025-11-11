@@ -20,43 +20,27 @@ impl CompoundTask for Select {
 fn decompose_select(
     In(mut ctx): In<DecomposeInput>,
     world: &mut World,
-    mut task_relations: Local<QueryState<(NameOrEntity, &Tasks)>>,
+    mut task_relations: Local<QueryState<&Tasks>>,
     mut individual_tasks: Local<
         QueryState<(
             Entity,
-            NameOrEntity,
             AnyOf<(&Operator, &TypeErasedCompoundTask)>,
             Option<&Conditions>,
             Option<&Effects>,
         )>,
     >,
-    mut conditions: Local<QueryState<(Entity, NameOrEntity, &Condition)>>,
-    mut effects: Local<QueryState<(Entity, NameOrEntity, &Effect)>>,
+    mut conditions: Local<QueryState<&Condition>>,
+    mut effects: Local<QueryState<&Effect>>,
 ) -> DecomposeResult {
-    let Ok((name, tasks)) = task_relations.get(world, ctx.compound_task) else {
+    let Ok(tasks) = task_relations.get(world, ctx.compound_task) else {
         return DecomposeResult::Failure;
     };
-    let entity = ctx.compound_task;
-    let sel_name = name
-        .name
-        .map(|n| format!("{entity} ({n})"))
-        .unwrap_or_else(|| format!("{entity}"));
-    debug!("select {sel_name}: decomposing");
     let individual_tasks: Vec<_> = individual_tasks
         .iter_many(world, tasks)
         .map(
-            |(
-                task_entity,
-                name,
-                (operator, compound_task),
-                condition_relations,
-                effect_relations,
-            )| {
+            |(task_entity, (operator, compound_task), condition_relations, effect_relations)| {
                 (
                     task_entity,
-                    name.name
-                        .map(|n| format!("{task_entity} ({n})"))
-                        .unwrap_or_else(|| format!("{task_entity}")),
                     operator.cloned(),
                     compound_task.cloned(),
                     condition_relations.cloned(),
@@ -66,40 +50,22 @@ fn decompose_select(
         )
         .collect();
 
-    let mut found_anything = false;
-    'task: for (
-        i,
-        (task_entity, task_name, operator, compound_task, condition_relations, effect_relations),
-    ) in individual_tasks.into_iter().enumerate()
+    'task: for (i, (task_entity, operator, compound_task, condition_relations, effect_relations)) in
+        individual_tasks.into_iter().enumerate()
     {
         let mtr = ctx.plan.mtr.clone().with(i as u16);
         if mtr > ctx.previous_mtr {
-            debug!(
-                "select {sel_name} -> task {task_name}: current MTR ({mtr:?}) is greater than previous MTR ({previous_mtr:?})",
-                previous_mtr = ctx.previous_mtr
-            );
             return DecomposeResult::Rejection;
         }
         if let Some(condition_relations) = condition_relations {
-            for (entity, name, condition) in conditions.iter_many(world, condition_relations.iter())
-            {
-                let name = name
-                    .name
-                    .map(|n| format!("{entity} ({n})"))
-                    .unwrap_or_else(|| format!("{entity}"));
-                let is_fulfilled = condition.is_fullfilled(&mut ctx.world_state);
-                debug!("select {sel_name} -> task {task_name} -> condition {name}: {is_fulfilled}");
-                if !is_fulfilled {
-                    debug!(
-                        "select {sel_name} -> task {task_name} -> condition {name}: skipping due to unfulfilled condition"
-                    );
+            for condition in conditions.iter_many(world, condition_relations.iter()) {
+                if !condition.is_fullfilled(&mut ctx.world_state) {
                     continue 'task;
                 }
                 ctx.conditions.push(condition.clone());
             }
         }
         if let Some(operator) = operator {
-            debug!("select {sel_name} -> task {task_name}: operator");
             ctx.plan.push_back(PlannedOperator {
                 system: operator.system_id(),
                 entity: task_entity,
@@ -107,7 +73,6 @@ fn decompose_select(
                 conditions: ctx.conditions.clone(),
             });
         } else if let Some(compound_task) = compound_task {
-            debug!("select {sel_name} -> task {task_name}: compound");
             match world.run_system_with(
                 compound_task.decompose,
                 DecomposeInput {
@@ -133,28 +98,17 @@ fn decompose_select(
             return DecomposeResult::Failure;
         }
         if let Some(effect_relations) = effect_relations {
-            for (entity, name, effect) in effects.iter_many(world, effect_relations.iter()) {
-                let name = name
-                    .name
-                    .map(|n| format!("{entity} ({n})"))
-                    .unwrap_or_else(|| format!("{entity}"));
-                debug!("select {sel_name} -> task {task_name} -> effect {name}: applied");
+            for effect in effects.iter_many(world, effect_relations.iter()) {
                 effect.apply(&mut ctx.world_state);
                 ctx.plan.back_mut().unwrap().effects.push(effect.clone());
             }
         }
         // only use the first match
         ctx.plan.mtr.push(i as u16);
-        found_anything = true;
-        break;
-    }
-    if found_anything {
-        debug!("select {sel_name}: done");
-        DecomposeResult::Success {
+        return DecomposeResult::Success {
             plan: ctx.plan,
             world_state: ctx.world_state,
-        }
-    } else {
-        DecomposeResult::Failure
+        };
     }
+    DecomposeResult::Failure
 }

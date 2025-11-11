@@ -34,6 +34,10 @@ impl Plan {
     pub fn clear(&mut self) {
         *self = Self::new();
     }
+
+    pub fn format_pretty(&self) -> String {
+        todo!()
+    }
 }
 
 /// An entry in [`Plan::operators_left`], representing an operator that is either currently executing or waiting to execute.

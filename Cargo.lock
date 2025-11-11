@@ -517,7 +517,7 @@ dependencies = [
  "bevy_reflect",
  "bevy_utils",
  "disqualified",
- "log",
+ "tracing",
  "ustr",
  "variadics_please",
 ]

@@ -32,7 +32,7 @@ pub mod prelude {
         bevy_derive::{Deref, DerefMut},
         bevy_ecs::prelude::*,
         bevy_reflect::prelude::*,
-        log::{debug, error},
+        tracing::*,
     };
 }
 extern crate alloc;

@@ -7,14 +7,11 @@ pub(crate) fn update_empty_plans(
     for (entity, name, plan) in plans.iter_mut() {
         if plan.is_empty() {
             commands.entity(entity).trigger(UpdatePlan::new);
-            let name = name
-                .name
-                .map(|n| format!("{} ({}))", name.entity, n))
-                .unwrap_or_else(|| format!("{}", name.entity));
-            debug!("{name}: Plan is empty, triggering replan.");
+            debug!(entity=?name.entity, name=?name.name, "Plan is empty, triggering replan.");
         }
     }
 }
+
 pub(crate) fn execute_plan(
     world: &mut World,
     mut plans: Local<QueryState<(Entity, NameOrEntity, &mut Plan)>>,
@@ -22,36 +19,32 @@ pub(crate) fn execute_plan(
     let plans = plans
         .iter(world)
         .filter_map(|(entity, name, plan)| {
-            Some((
-                entity,
-                name.name
-                    .map(|n| format!("{entity} ({n})"))
-                    .unwrap_or_else(|| format!("{entity}")),
-                plan.front()?.clone(),
-            ))
+            Some((entity, name.name.cloned(), plan.front()?.clone()))
         })
         .collect::<Vec<_>>();
     for (entity, name, planned_operator) in plans {
         if !world.entity_mut(entity).contains::<Props>() {
             world.entity_mut(entity).insert(Props::default());
         }
-        debug!("{name}: validating plan");
+        debug!(?entity, ?name, "Executing plan");
         let mut all_conditions_met = true;
         {
-            let mut entity = world.entity_mut(entity);
-            let mut props = entity.get_mut::<Props>().unwrap();
+            let mut entity_mut = world.entity_mut(entity);
+            let mut props = entity_mut.get_mut::<Props>().unwrap();
             for condition in planned_operator.conditions {
                 if condition.is_fullfilled(&mut props) {
-                    debug!("{name}: Condition met");
                 } else {
-                    debug!("{name}: Condition not met. Aborting plan");
+                    debug!(
+                        ?entity,
+                        ?name,
+                        "Encountered unsatisfied condition, aborting plan"
+                    );
                     all_conditions_met = false;
                     break;
                 }
             }
         }
         let result: Result<OperatorStatus, _> = if all_conditions_met {
-            debug!("{name}: executing plan step");
             let input = OperatorInput {
                 planner: entity,
                 operator: planned_operator.entity,
@@ -63,7 +56,7 @@ pub(crate) fn execute_plan(
 
         let force_replan = match result {
             Ok(OperatorStatus::Success) => {
-                debug!("{name}: Plan step completed successfully, moving to next step");
+                debug!(entity=?entity, name=?name, "Operator completed successfully, moving to next step");
                 let step = world
                     .entity_mut(entity)
                     .get_mut::<Plan>()
@@ -74,10 +67,7 @@ pub(crate) fn execute_plan(
                 let mut entity = world.entity_mut(entity);
                 let mut props = entity.get_mut::<Props>().unwrap();
                 for effect in step.effects {
-                    if effect.plan_only {
-                        debug!("{name}: skipped plan-only effect");
-                    } else {
-                        debug!("{name}: applied effect");
+                    if !effect.plan_only {
                         effect.apply(&mut props);
                     }
                 }
@@ -85,16 +75,21 @@ pub(crate) fn execute_plan(
                 false
             }
             Ok(OperatorStatus::Ongoing) => {
-                debug!("{name}: Plan step ongoing.");
+                debug!(?entity, ?name, "Operator ongoing");
                 // Even if the current plan is empty, we still want to continue the execution of the last step!
                 continue;
             }
             Ok(OperatorStatus::Failure) => {
-                debug!("{name}: Plan step failed, aborting plan");
+                debug!(?entity, ?name, "Operator failed, aborting plan");
                 true
             }
             Err(err) => {
-                error!("{name}: failed to execute current plan step: {err}. Aborting plan");
+                debug!(
+                    ?entity,
+                    ?name,
+                    ?err,
+                    "Operator system failed, aborting plan"
+                );
                 true
             }
         };
@@ -105,7 +100,7 @@ pub(crate) fn execute_plan(
                 .is_none_or(|plan| plan.is_empty())
         {
             world.entity_mut(entity).insert(Plan::default());
-            debug!("{name}: forcing a replan.");
+            debug!(?entity, ?name, "triggering replan");
         }
     }
 }
