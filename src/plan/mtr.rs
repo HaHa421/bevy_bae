@@ -1,12 +1,25 @@
 //! Contains the [`Mtr`] struct.
 
 use core::cmp::Ordering;
+use core::fmt::{self, Display};
 
 use crate::prelude::*;
 
 /// Method Traversal Record
 #[derive(Clone, Default, Reflect, Debug, Deref, DerefMut)]
 pub struct Mtr(pub Vec<u16>);
+
+impl Display for Mtr {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let string = self
+            .0
+            .iter()
+            .map(|&x| x.to_string())
+            .collect::<Vec<_>>()
+            .join(".");
+        write!(f, "{}", string)
+    }
+}
 
 impl Mtr {
     /// Adds a new method order to the MTR. Lower values mean higher priority.

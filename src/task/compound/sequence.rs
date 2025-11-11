@@ -81,7 +81,7 @@ fn decompose_sequence(
         };
         if has_operator {
             ctx.plan.push_back(PlannedOperator {
-                operator: task_entity,
+                entity: task_entity,
                 effects: vec![],
                 conditions,
             });

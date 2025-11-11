@@ -66,9 +66,9 @@ pub(crate) fn execute_plan(
         let result: Result<OperatorStatus, _> = if all_conditions_met {
             let input = OperatorInput {
                 planner: plan_entity,
-                operator: planned_operator.operator,
+                operator: planned_operator.entity,
             };
-            if let Ok((op_name, operator)) = operators.get(world, planned_operator.operator) {
+            if let Ok((op_name, operator)) = operators.get(world, planned_operator.entity) {
                 debug!(
                     ?plan_entity,
                     ?plan_name,
@@ -79,7 +79,7 @@ pub(crate) fn execute_plan(
                 world.run_system_with(operator.system_id(), input)
             } else {
                 debug!(
-                    operator_entity=?planned_operator.operator,
+                    operator_entity=?planned_operator.entity,
                     "failed to find operator"
                 );
                 Ok(OperatorStatus::Failure)

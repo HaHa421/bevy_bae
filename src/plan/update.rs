@@ -101,7 +101,7 @@ fn update_plan_inner(
         // well that was easy: this root has just a single operator
         Plan {
             operators_left: [PlannedOperator {
-                operator: entity,
+                entity,
                 effects: vec![],
                 conditions: initial_conditions,
             }]
@@ -133,7 +133,7 @@ fn update_plan_inner(
                                 .operators_total
                                 .iter()
                                 .zip(plan.operators_left.iter())
-                                .all(|(a, b)| *a == b.operator)
+                                .all(|(a, b)| *a == b.entity)
                     })
                 {
                     // We found the same plan we are already running. Just keep that one.
@@ -161,7 +161,7 @@ fn update_plan_inner(
     let op_entities = plan
         .operators_left
         .iter()
-        .map(|op| op.operator)
+        .map(|op| op.entity)
         .collect::<Vec<_>>();
     plan.operators_total = op_entities;
 

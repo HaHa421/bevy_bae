@@ -362,6 +362,27 @@ fn compound_effects_are_not_applied_on_abort() {
     assert!(!*app.behavior_entity().get_prop::<bool>("called"));
 }
 
+#[test]
+fn logs_plan() {
+    let mut app = App::test((
+        Select,
+        tasks![
+            (
+                Sequence,
+                eff("called", true),
+                tasks![op("a"), (op("b"), cond_is("disabled", false))]
+            ),
+            op("c")
+        ],
+    ));
+    app.update();
+    app.assert_last_opt("a");
+
+    app.behavior_entity().trigger(LogPlan::new);
+
+    app.update();
+}
+
 trait TestApp {
     fn test(behavior: impl Bundle) -> App;
     #[track_caller]

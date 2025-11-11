@@ -15,7 +15,7 @@ pub mod prelude {
             Effect,
             relationship::{EffectOf, EffectSpawner, EffectSpawnerCommands, Effects, effects},
         },
-        plan::{Plan, update::UpdatePlan},
+        plan::{LogPlan, Plan, update::UpdatePlan},
         task::{
             OperatorStatus,
             compound::{
@@ -28,11 +28,12 @@ pub mod prelude {
         },
     };
     pub(crate) use {
+        crate::name_ext::NameOrEntityExt as _,
         bevy_app::prelude::*,
         bevy_derive::{Deref, DerefMut},
         bevy_ecs::prelude::*,
         bevy_reflect::prelude::*,
-        tracing::*,
+        tracing::{self, debug, info},
     };
 }
 extern crate alloc;
@@ -43,6 +44,7 @@ pub use bevy_mod_props::Ustr;
 use crate::{
     plan::{
         execution::{execute_plan, update_empty_plans},
+        log_plan,
         update::update_plan,
     },
     prelude::*,
@@ -54,6 +56,7 @@ use crate::{
 
 pub mod condition;
 pub mod effect;
+mod name_ext;
 pub mod plan;
 pub mod task;
 
@@ -89,7 +92,7 @@ impl Plugin for BaePlugin {
             .add_observer(remove_bae_task_present_on_remove::<Tasks>);
         app.add_compound_task::<Select>()
             .add_compound_task::<Sequence>();
-        app.add_observer(update_plan);
+        app.add_observer(update_plan).add_observer(log_plan);
         app.add_systems(
             self.schedule,
             ((update_empty_plans, execute_plan)

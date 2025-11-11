@@ -1,6 +1,7 @@
 //! Contains the [`Plan`] component and types for operating on it.
 
 use alloc::collections::VecDeque;
+use bevy_ecs::{entity_disabling::Disabled, query::QueryEntityError};
 
 use crate::{plan::mtr::Mtr, prelude::*};
 
@@ -40,11 +41,66 @@ impl Plan {
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct PlannedOperator {
     /// The [`Entity`] of the [`Operator`].
-    pub operator: Entity,
+    pub entity: Entity,
     /// The [`Effect`]s of the operator to be applied after it completes. Does not include effects that are [`Effect::plan_only`].
     /// The last operator of a compound task will also inherit effects from higher-up compound tasks.
     pub effects: Vec<Entity>,
     /// The [`Condition`]s that need to be fulfilled for the operator to be run.
     /// The first operator of a compound task will also inherit conditions from higher-up compound tasks.
     pub conditions: Vec<Entity>,
+}
+
+/// An [`EntityEvent`] for logging a given plan via [`info!`]
+#[derive(EntityEvent, Debug)]
+pub struct LogPlan {
+    entity: Entity,
+}
+
+impl LogPlan {
+    /// Creates a new [`LogPlan`] event for the given entity.
+    pub fn new(entity: Entity) -> Self {
+        LogPlan { entity }
+    }
+}
+
+impl From<Entity> for LogPlan {
+    fn from(entity: Entity) -> Self {
+        LogPlan::new(entity)
+    }
+}
+
+pub(crate) fn log_plan(
+    log: On<LogPlan>,
+    plans: Query<&Plan, Allow<Disabled>>,
+    names: Query<NameOrEntity, Allow<Disabled>>,
+) -> Result {
+    let plan_entity = log.entity;
+    let plan = plans.get(plan_entity)?;
+    let name = |entity| -> Result<String, QueryEntityError> {
+        names.get(entity).map(|n| n.entity_and_name())
+    };
+    let plan_name = name(plan_entity)?;
+    info!("logging plan {plan_name}:");
+    info!("- mtr: {}", plan.mtr);
+    info!("- operators left ({}):", plan.operators_left.len());
+    for operator in &plan.operators_left {
+        let operator_name = name(operator.entity)?;
+        info!("  - {operator_name}:");
+        info!("    - effects ({}):", operator.effects.len());
+        for effect in &operator.effects {
+            let effect_name = name(*effect)?;
+            info!("      - {effect_name}");
+        }
+        info!("    - conditions ({}):", operator.conditions.len());
+        for condition in &operator.conditions {
+            let condition_name = name(*condition)?;
+            info!("      - {condition_name}");
+        }
+    }
+    info!("- total operators ({})", plan.operators_total.len());
+    for operator in &plan.operators_total {
+        let operator_name = name(*operator)?;
+        info!("  - {operator_name}");
+    }
+    Ok(())
 }
