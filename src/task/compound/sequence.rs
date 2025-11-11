@@ -22,15 +22,19 @@ fn decompose_sequence(
     world: &mut World,
     mut task_relations: Local<QueryState<&Tasks>>,
     mut individual_tasks: Local<
-        QueryState<(
-            Entity,
-            AnyOf<(&Operator, &TypeErasedCompoundTask)>,
-            Option<&Conditions>,
-            Option<&Effects>,
-        )>,
+        QueryState<
+            (
+                Entity,
+                Has<Operator>,
+                Option<&TypeErasedCompoundTask>,
+                Option<&Conditions>,
+                Option<&Effects>,
+            ),
+            Or<(With<Operator>, With<TypeErasedCompoundTask>)>,
+        >,
     >,
-    mut conditions: Local<QueryState<&Condition>>,
-    mut effects: Local<QueryState<&Effect>>,
+    mut conditions: Local<QueryState<(Entity, &Condition)>>,
+    mut effects: Local<QueryState<(Entity, &Effect)>>,
 ) -> DecomposeResult {
     let Ok(tasks) = task_relations.get(world, ctx.compound_task) else {
         return DecomposeResult::Failure;
@@ -38,10 +42,10 @@ fn decompose_sequence(
     let individual_tasks: Vec<_> = individual_tasks
         .iter_many(world, tasks)
         .map(
-            |(task_entity, (operator, compound_task), condition_relations, effect_relations)| {
+            |(task_entity, has_operator, compound_task, condition_relations, effect_relations)| {
                 (
                     task_entity,
-                    operator.cloned(),
+                    has_operator,
                     compound_task.cloned(),
                     condition_relations.cloned(),
                     effect_relations.cloned(),
@@ -50,16 +54,16 @@ fn decompose_sequence(
         )
         .collect();
     let mut found_anything = false;
-    for (task_entity, operator, compound_task, condition_relations, effect_relations) in
+    for (task_entity, has_operator, compound_task, condition_relations, effect_relations) in
         individual_tasks
     {
         let mut individual_conditions = Vec::new();
         if let Some(condition_relations) = condition_relations {
-            for condition in conditions.iter_many(world, condition_relations.iter()) {
+            for (entity, condition) in conditions.iter_many(world, condition_relations.iter()) {
                 if !condition.is_fullfilled(&mut ctx.world_state) {
                     return DecomposeResult::Failure;
                 }
-                individual_conditions.push(condition.clone());
+                individual_conditions.push(entity);
             }
         }
         let conditions = if !found_anything {
@@ -69,10 +73,9 @@ fn decompose_sequence(
         } else {
             individual_conditions
         };
-        if let Some(operator) = operator {
+        if has_operator {
             ctx.plan.push_back(PlannedOperator {
-                system: operator.system_id(),
-                entity: task_entity,
+                operator: task_entity,
                 effects: vec![],
                 conditions,
             });
@@ -102,9 +105,9 @@ fn decompose_sequence(
             return DecomposeResult::Failure;
         }
         if let Some(effect_relations) = effect_relations {
-            for effect in effects.iter_many(world, effect_relations.iter()) {
+            for (entity, effect) in effects.iter_many(world, effect_relations.iter()) {
                 effect.apply(&mut ctx.world_state);
-                ctx.plan.back_mut().unwrap().effects.push(effect.clone());
+                ctx.plan.back_mut().unwrap().effects.push(entity);
             }
         }
         found_anything = true;

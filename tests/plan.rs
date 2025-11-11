@@ -245,16 +245,17 @@ fn assert_plan(behavior: impl Bundle, plan: Vec<&'static str>) {
         .unwrap()
         .clone();
 
-    let mut operators = app.world().try_query::<(&Operator, &Name)>().unwrap();
+    let mut operators = app
+        .world()
+        .try_query_filtered::<(Entity, &Name), With<Operator>>()
+        .unwrap();
     let actual_plan_names = actual_plan
         .operators_left
         .into_iter()
         .map(|planned_op| {
             operators
                 .iter(app.world())
-                .find_map(|(op, name)| {
-                    (op.system_id() == planned_op.system).then(|| name.to_string())
-                })
+                .find_map(|(op, name)| (op == planned_op.operator).then(|| name.to_string()))
                 .unwrap()
         })
         .collect::<Vec<_>>();

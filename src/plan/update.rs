@@ -63,40 +63,47 @@ pub(crate) fn update_plan(
 fn update_plan_inner(
     update: In<UpdatePlan>,
     world: &mut World,
-    mut conditions: Local<QueryState<&Condition>>,
-    mut effects: Local<QueryState<&Effect>>,
-    mut tasks: Local<QueryState<AnyOf<(&Operator, &TypeErasedCompoundTask)>>>,
+    mut conditions: Local<QueryState<(Entity, &Condition)>>,
+    mut effects: Local<QueryState<Entity, With<Effect>>>,
+    mut tasks: Local<
+        QueryState<
+            (Entity, Has<Operator>, Option<&TypeErasedCompoundTask>),
+            Or<(With<Operator>, With<TypeErasedCompoundTask>)>,
+        >,
+    >,
 ) -> Result {
     let root = update.entity;
 
     let mut world_state = world.entity(update.entity).props().clone();
     let mut initial_conditions = Vec::new();
     if let Some(condition_relations) = world.get::<Conditions>(root) {
-        for condition in conditions.iter_many(world, condition_relations) {
+        for (entity, condition) in conditions.iter_many(world, condition_relations) {
             let is_fulfilled = condition.is_fullfilled(&mut world_state);
             if !is_fulfilled {
                 world.entity_mut(root).insert(Plan::default());
                 return Ok(());
             }
-            initial_conditions.push(condition.clone());
+            initial_conditions.push(entity);
         }
     }
 
-    let Ok((operator, task)) = tasks
-        .get(world, root)
-        .map(|(o, t)| (o.cloned(), t.cloned()))
+    let Ok((entity, has_operator, compound_task)) =
+        tasks
+            .get(world, root)
+            .map(|(entity, has_operator, compound_task)| {
+                (entity, has_operator, compound_task.cloned())
+            })
     else {
         world.entity_mut(root).insert(Plan::default());
         return Err(BevyError::from(format!(
             "Called `update_plan` for an entity without any tasks. Ensure it has either an `Operator` or a `CompoundTask` like `Select` or `Sequence`"
         )));
     };
-    let mut plan = if let Some(operator) = operator {
+    let mut plan = if has_operator {
         // well that was easy: this root has just a single operator
         Plan {
             operators_left: [PlannedOperator {
-                system: operator.system_id(),
-                entity: root,
+                operator: entity,
                 effects: vec![],
                 conditions: initial_conditions,
             }]
@@ -104,7 +111,7 @@ fn update_plan_inner(
             mtr: Mtr::default(),
             operators_total: Vec::new(),
         }
-    } else if let Some(compound_task) = task {
+    } else if let Some(compound_task) = compound_task {
         let previous_mtr = if let Some(plan) = world.entity(root).get::<Plan>() {
             plan.mtr.clone()
         } else {
@@ -128,7 +135,7 @@ fn update_plan_inner(
                                 .operators_total
                                 .iter()
                                 .zip(plan.operators_left.iter())
-                                .all(|(a, b)| *a == b.entity)
+                                .all(|(a, b)| *a == b.operator)
                     })
                 {
                     // We found the same plan we are already running. Just keep that one.
@@ -149,14 +156,14 @@ fn update_plan_inner(
         && let Some(effect_relations) = world.get::<Effects>(root)
     {
         for effect in effects.iter_many(world, effect_relations) {
-            plan.back_mut().unwrap().effects.push(effect.clone());
+            plan.back_mut().unwrap().effects.push(effect);
         }
     }
 
     let op_entities = plan
         .operators_left
         .iter()
-        .map(|op| op.entity)
+        .map(|op| op.operator)
         .collect::<Vec<_>>();
     plan.operators_total = op_entities;
 

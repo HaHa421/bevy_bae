@@ -165,6 +165,7 @@ fn assert_effects(behavior: impl Bundle, props: Vec<Vec<(&'static str, Value)>>)
                 .effects
                 .into_iter()
                 .map(|effect| {
+                    let effect = app.world().entity(effect).get::<Effect>().unwrap();
                     let mut props = Props::new();
                     effect.apply(&mut props);
                     props

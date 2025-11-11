@@ -34,23 +34,17 @@ impl Plan {
     pub fn clear(&mut self) {
         *self = Self::new();
     }
-
-    pub fn format_pretty(&self) -> String {
-        todo!()
-    }
 }
 
 /// An entry in [`Plan::operators_left`], representing an operator that is either currently executing or waiting to execute.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct PlannedOperator {
-    /// The [`SystemId`](bevy_ecs::system::SystemId) of the operator.
-    pub system: OperatorId,
-    /// The [`Entity`] of the operator.
-    pub entity: Entity,
+    /// The [`Entity`] of the [`Operator`].
+    pub operator: Entity,
     /// The [`Effect`]s of the operator to be applied after it completes. Does not include effects that are [`Effect::plan_only`].
     /// The last operator of a compound task will also inherit effects from higher-up compound tasks.
-    pub effects: Vec<Effect>,
+    pub effects: Vec<Entity>,
     /// The [`Condition`]s that need to be fulfilled for the operator to be run.
     /// The first operator of a compound task will also inherit conditions from higher-up compound tasks.
-    pub conditions: Vec<Condition>,
+    pub conditions: Vec<Entity>,
 }
