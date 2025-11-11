@@ -35,29 +35,35 @@ fn decompose_select(
     >,
     mut conditions: Local<QueryState<(Entity, &Condition)>>,
     mut effects: Local<QueryState<(Entity, &Effect)>>,
+    mut individual_tasks_scratch: Local<
+        Vec<(
+            Entity,
+            bool,
+            Option<TypeErasedCompoundTask>,
+            Option<Conditions>,
+            Option<Effects>,
+        )>,
+    >,
 ) -> DecomposeResult {
     let Ok(tasks) = task_relations.get(world, ctx.compound_task) else {
         return DecomposeResult::Failure;
     };
-    let individual_tasks: Vec<_> = individual_tasks
-        .iter_many(world, tasks)
-        .map(
-            |(task_entity, has_operator, compound_task, condition_relations, effect_relations)| {
-                (
-                    task_entity,
-                    has_operator,
-                    compound_task.cloned(),
-                    condition_relations.cloned(),
-                    effect_relations.cloned(),
-                )
-            },
-        )
-        .collect();
+    individual_tasks_scratch.extend(individual_tasks.iter_many(world, tasks).map(
+        |(task_entity, has_operator, compound_task, condition_relations, effect_relations)| {
+            (
+                task_entity,
+                has_operator,
+                compound_task.cloned(),
+                condition_relations.cloned(),
+                effect_relations.cloned(),
+            )
+        },
+    ));
 
     'task: for (
         i,
         (task_entity, has_operator, compound_task, condition_relations, effect_relations),
-    ) in individual_tasks.into_iter().enumerate()
+    ) in individual_tasks_scratch.drain(..).enumerate()
     {
         let mtr = ctx.plan.mtr.clone().with(i as u16);
         if mtr > ctx.previous_mtr {

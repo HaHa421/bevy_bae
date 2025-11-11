@@ -35,27 +35,33 @@ fn decompose_sequence(
     >,
     mut conditions: Local<QueryState<(Entity, &Condition)>>,
     mut effects: Local<QueryState<(Entity, &Effect)>>,
+    mut individual_tasks_scratch: Local<
+        Vec<(
+            Entity,
+            bool,
+            Option<TypeErasedCompoundTask>,
+            Option<Conditions>,
+            Option<Effects>,
+        )>,
+    >,
 ) -> DecomposeResult {
     let Ok(tasks) = task_relations.get(world, ctx.compound_task) else {
         return DecomposeResult::Failure;
     };
-    let individual_tasks: Vec<_> = individual_tasks
-        .iter_many(world, tasks)
-        .map(
-            |(task_entity, has_operator, compound_task, condition_relations, effect_relations)| {
-                (
-                    task_entity,
-                    has_operator,
-                    compound_task.cloned(),
-                    condition_relations.cloned(),
-                    effect_relations.cloned(),
-                )
-            },
-        )
-        .collect();
+    individual_tasks_scratch.extend(individual_tasks.iter_many(world, tasks).map(
+        |(task_entity, has_operator, compound_task, condition_relations, effect_relations)| {
+            (
+                task_entity,
+                has_operator,
+                compound_task.cloned(),
+                condition_relations.cloned(),
+                effect_relations.cloned(),
+            )
+        },
+    ));
     let mut found_anything = false;
     for (task_entity, has_operator, compound_task, condition_relations, effect_relations) in
-        individual_tasks
+        individual_tasks_scratch.drain(..)
     {
         let mut individual_conditions = Vec::new();
         if let Some(condition_relations) = condition_relations {
