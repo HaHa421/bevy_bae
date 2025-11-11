@@ -54,8 +54,9 @@ pub(crate) fn execute_plan(
         {
             let mut entity = world.entity_mut(entity);
             let mut props = entity.get_mut::<Props>().unwrap();
+            let props = props.bypass_change_detection();
             for condition in conditions {
-                if condition.is_fullfilled(&mut props) {
+                if condition.is_fullfilled(props) {
                     debug!("{name}: Condition met");
                 } else {
                     debug!("{name}: Condition not met. Aborting plan");
@@ -87,12 +88,13 @@ pub(crate) fn execute_plan(
 
                 let mut entity = world.entity_mut(entity);
                 let mut props = entity.get_mut::<Props>().unwrap();
+                let props = props.bypass_change_detection();
                 for effect in step.effects {
                     if effect.plan_only {
                         debug!("{name}: skipped plan-only effect");
                     } else {
                         debug!("{name}: applied effect");
-                        effect.apply(&mut props);
+                        effect.apply(props);
                     }
                 }
 

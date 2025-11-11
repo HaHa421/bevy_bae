@@ -3,6 +3,7 @@
 use bevy_ecs::error::{DefaultErrorHandler, HandleError as _};
 use bevy_ecs::system::command::run_system_cached_with;
 use bevy_mod_props::PropsExt;
+use core::marker::PhantomData;
 
 use crate::plan::PlannedOperator;
 use crate::plan::mtr::Mtr;
@@ -15,8 +16,9 @@ use crate::task::compound::{DecomposeInput, DecomposeResult, TypeErasedCompoundT
 /// If you want to instead wipe the slate clean, insert [`Plan::new`] instead, or call [`Plan::clear`].
 #[derive(EntityEvent)]
 pub struct UpdatePlan {
+    /// The entity holding the [`Plan`] to update.
     #[event_target]
-    entity: Entity,
+    pub entity: Entity,
 }
 
 impl From<Entity> for UpdatePlan {
@@ -32,6 +34,19 @@ impl UpdatePlan {
     }
 }
 
+/// Event triggered automatically when a plan is replaced.
+#[derive(EntityEvent)]
+pub struct ReplacePlan {
+    /// The entity holding the [`Plan`] that was replaced.
+    #[event_target]
+    pub entity: Entity,
+    /// The previous value of the [`Plan`]. To read the current value, query it in your observer.
+    pub old: Plan,
+    /// Here so users cannot accidentally create a [`ReplacePlan`] when they were
+    /// actually looking for [`UpdatePlan`].
+    _pd: PhantomData<()>,
+}
+
 pub(crate) fn update_plan(
     update: On<UpdatePlan>,
     mut commands: Commands,
@@ -43,6 +58,15 @@ pub(crate) fn update_plan(
         run_system_cached_with(update_plan_inner, UpdatePlan { entity })
             .handle_error_with(error_handler.0),
     );
+}
+
+pub(crate) fn update_plans_when_props_changed(
+    plans: Query<Entity, (With<Plan>, Changed<Props>)>,
+    mut commands: Commands,
+) {
+    for entity in plans.iter() {
+        commands.entity(entity).trigger(UpdatePlan::new);
+    }
 }
 
 fn update_plan_inner(
@@ -163,6 +187,16 @@ fn update_plan_inner(
         .collect::<Vec<_>>();
     plan.operators_total = op_entities;
 
+    let old_plan = world
+        .entity(root)
+        .get::<Plan>()
+        .cloned()
+        .unwrap_or_default();
     world.entity_mut(root).insert(plan);
+    world.trigger(ReplacePlan {
+        entity: root,
+        old: old_plan,
+        _pd: PhantomData,
+    });
     Ok(())
 }

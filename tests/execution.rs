@@ -180,6 +180,61 @@ fn replan_switches_to_higher_priority() {
     app.assert_last_opt("a");
 }
 
+#[test]
+fn does_not_replan_on_internal_prop_change() {
+    let mut app = App::test((
+        Select,
+        tasks![
+            (
+                Sequence,
+                tasks![(op("a"), cond_is("enabled", true)), op("b")]
+            ),
+            (Sequence, tasks![(op("c"), eff("enabled", true)), op("d")])
+        ],
+    ));
+    app.update();
+    app.assert_last_opt("c");
+
+    app.update();
+    app.assert_last_opt("d");
+
+    app.update();
+    app.assert_last_opt("a");
+
+    app.update();
+    app.assert_last_opt("b");
+
+    app.update();
+    app.assert_last_opt("a");
+}
+
+#[test]
+fn replans_on_external_prop_change() {
+    let mut app = App::test((
+        Select,
+        tasks![
+            (
+                Sequence,
+                tasks![(op("a"), cond_is("enabled", true)), op("b")]
+            ),
+            (Sequence, tasks![op("c"), op("d")])
+        ],
+    ));
+    app.update();
+    app.assert_last_opt("c");
+
+    app.behavior_entity().set_prop("enabled", true);
+
+    app.update();
+    app.assert_last_opt("a");
+
+    app.update();
+    app.assert_last_opt("b");
+
+    app.update();
+    app.assert_last_opt("a");
+}
+
 trait TestApp {
     fn test(behavior: impl Bundle) -> App;
     #[track_caller]
