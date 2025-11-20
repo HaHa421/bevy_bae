@@ -1,17 +1,3 @@
-use crate::{plan::PlannedOperator, prelude::*};
-
-pub(crate) fn update_empty_plans(
-    mut plans: Query<(Entity, NameOrEntity, &Plan)>,
-    mut commands: Commands,
-) {
-    for (entity, name, plan) in plans.iter_mut() {
-        if plan.is_empty() {
-            commands.entity(entity).trigger(UpdatePlan::new);
-            debug!(entity=?name.entity, name=?name.name, "Plan is empty, triggering replan.");
-        }
-    }
-}
-
 pub(crate) fn execute_plan(
     world: &mut World,
     mut plans: Local<QueryState<(NameOrEntity, &mut Plan)>>,
@@ -90,49 +76,47 @@ pub(crate) fn execute_plan(
             Ok(OperatorStatus::Failure)
         };
 
-        let force_replan = match result {
+        let (force_replan, plan_entity_alive) = match result {
             Ok(OperatorStatus::Success) => {
                 debug!(
                     ?plan_entity,
                     ?plan_name,
                     "operator completed successfully, moving to next step"
                 );
-                let step = world
-                    .entity_mut(plan_entity)
-                    .get_mut::<Plan>()
-                    .unwrap()
-                    .pop_front()
-                    .unwrap();
+                match world.get_entity_mut(plan_entity) {
+                    Ok(mut entity_mut) => {
+                        let step = entity_mut.get_mut::<Plan>().unwrap().pop_front().unwrap();
 
-                effects_scratch.extend(
-                    effects
-                        .iter_many(world, step.effects.iter())
-                        .map(|(name, effect)| (name.entity, name.name.cloned(), effect.clone())),
-                );
-                let mut entity = world.entity_mut(plan_entity);
-                let mut props = entity.get_mut::<Props>().unwrap();
-                for (effect_entity, effect_name, effect) in effects_scratch.drain(..) {
-                    if effect.plan_only {
-                        debug!(
-                            ?plan_entity,
-                            ?plan_name,
-                            ?effect_entity,
-                            ?effect_name,
-                            "skipping effect as it's plan_only"
-                        );
-                    } else {
-                        debug!(
-                            ?plan_entity,
-                            ?plan_name,
-                            ?effect_entity,
-                            ?effect_name,
-                            "applying effect"
-                        );
-                        effect.apply(&mut props);
+                        effects_scratch.extend(effects.iter_many(world, step.effects.iter()).map(
+                            |(name, effect)| (name.entity, name.name.cloned(), effect.clone()),
+                        ));
+                        let mut entity = world.entity_mut(plan_entity);
+                        let mut props = entity.get_mut::<Props>().unwrap();
+                        for (effect_entity, effect_name, effect) in effects_scratch.drain(..) {
+                            if effect.plan_only {
+                                debug!(
+                                    ?plan_entity,
+                                    ?plan_name,
+                                    ?effect_entity,
+                                    ?effect_name,
+                                    "skipping effect as it's plan_only"
+                                );
+                            } else {
+                                debug!(
+                                    ?plan_entity,
+                                    ?plan_name,
+                                    ?effect_entity,
+                                    ?effect_name,
+                                    "applying effect"
+                                );
+                                effect.apply(&mut props);
+                            }
+                        }
+
+                        (false, true)
                     }
+                    _ => (false, false),
                 }
-
-                false
             }
             Ok(OperatorStatus::Ongoing) => {
                 debug!(?plan_entity, ?plan_name, "operator ongoing");
@@ -141,7 +125,7 @@ pub(crate) fn execute_plan(
             }
             Ok(OperatorStatus::Failure) => {
                 debug!(?plan_entity, ?plan_name, "operator failed, aborting plan");
-                true
+                (true, world.get_entity(plan_entity).is_ok())
             }
             Err(err) => {
                 debug!(
@@ -150,17 +134,22 @@ pub(crate) fn execute_plan(
                     ?err,
                     "operator system failed, aborting plan"
                 );
-                true
+                (true, world.get_entity(plan_entity).is_ok())
             }
         };
-        if force_replan
-            || world
-                .entity(plan_entity)
-                .get::<Plan>()
-                .is_none_or(|plan| plan.is_empty())
-        {
-            world.entity_mut(plan_entity).insert(Plan::default());
-            debug!(?plan_entity, ?plan_name, "triggering replan");
+        if plan_entity_alive {
+            let need_replan = force_replan
+                || match world.get_entity(plan_entity) {
+                    Ok(entity_ref) => entity_ref
+                        .get::<Plan>()
+                        .map_or(true, |plan| plan.is_empty()),
+                    _ => false,
+                };
+
+            if need_replan {
+                world.entity_mut(plan_entity).insert(Plan::default());
+                debug!(?plan_entity, ?plan_name, "triggering replan");
+            }
         }
     }
 }
